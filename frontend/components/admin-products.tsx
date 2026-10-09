@@ -232,7 +232,7 @@ export default function AdminProducts() {
   const searchParams = useSearchParams();
   const importRef = useRef<HTMLInputElement | null>(null);
 
-  const [products, setProducts] = useState<AdminProduct[]>(getApiBase() ? [] : [starterProduct]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [form, setForm] = useState<ProductForm>(blank);
   const [editing, setEditing] = useState<string | null>(null);
   const [search, setSearch] = useState(searchParams.get("q") || "");

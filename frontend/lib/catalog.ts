@@ -57,13 +57,8 @@ export type ProductQuery = {
 
 export type ProductQueryResult = { products: CatalogProduct[]; meta: { page: number; limit: number; total: number; pages: number } };
 
-export const fallbackProducts: CatalogProduct[] = [
-  { slug: "dji-mini-5-pro-fly-more-combo-plus-rc2", name: "DJI Mini 5 Pro Fly More Combo Plus with RC2", image: "/images/products/mini-5.jpg", images: ["/images/products/mini-5.jpg"], price: 117000, oldPrice: 140000, badge: "HOT", meta: "1-inch CMOS · Up to 52 minutes", brand: "DJI", category: "Personal Drone", stock: 10, keyFeatures: ["1-inch CMOS camera", "Up to 52 minutes flight", "Omnidirectional obstacle sensing", "Vertical shooting"], specifications: { Camera: "1-inch CMOS", "Flight Time": "Up to 52 minutes", Controller: "DJI RC 2" } },
-  { slug: "dji-air-3s-fly-more-combo", name: "DJI Air 3S Fly More Combo with RC2", image: "/images/products/air-3.jpg", images: ["/images/products/air-3.jpg"], price: 154000, oldPrice: 185000, badge: "BEST SELLER", meta: "Dual-camera · 46 minutes flight", brand: "DJI", category: "Camera Drone", stock: 8 },
-  { slug: "dji-mavic-3-classic-combo", name: "DJI Mavic 3 Classic Fly More Combo", image: "/images/products/mavic-3.jpg", images: ["/images/products/mavic-3.jpg"], price: 195000, oldPrice: 215000, badge: "POPULAR", meta: "4/3 CMOS Hasselblad camera", brand: "DJI", category: "Camera Drone", stock: 5 },
-  { slug: "dji-avata-2-fly-more-combo", name: "DJI Avata 2 Fly More Combo", image: "/images/products/avata-2.jpg", images: ["/images/products/avata-2.jpg"], price: 74900, oldPrice: 89000, badge: "POPULAR", meta: "4K/60fps · immersive FPV", brand: "DJI", category: "FPV Drones", stock: 6 },
-  { slug: "dji-mini-3-fly-more-combo", name: "DJI Mini 3 Fly More Combo", image: "/images/products/mini-3.jpg", images: ["/images/products/mini-3.jpg"], price: 36500, oldPrice: 45000, badge: "BEST SELLER", meta: "4K camera · GPS return home", brand: "DJI", category: "Beginner Drone", stock: 12 },
-];
+// An unavailable API must never make demo inventory appear on the live storefront.
+export const fallbackProducts: CatalogProduct[] = [];
 
 function apiBase() { return (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, ""); }
 function normalize(item: CatalogProduct & { images?: string[]; shortDescription?: string }) : CatalogProduct {
