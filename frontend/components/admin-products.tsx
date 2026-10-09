@@ -733,10 +733,9 @@ export default function AdminProducts() {
               <label><input type="checkbox" checked={form.isNewArrival} onChange={e => setForm({ ...form, isNewArrival: e.target.checked })}/> New Arrival</label>
               <label><input type="checkbox" checked={form.isPopular} onChange={e => setForm({ ...form, isPopular: e.target.checked })}/> Hot and popular</label>
               <label><input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })}/> Active</label>
-              <label><input type="checkbox" checked={form.isDjiDrone} onChange={e => setForm({ ...form, isDjiDrone: e.target.checked })}/> DJI Drone</label>
-              <label><input type="checkbox" checked={form.isProfessionalDrone} onChange={e => setForm({ ...form, isProfessionalDrone: e.target.checked })}/> Professional Drone</label>
-              <label><input type="checkbox" checked={form.isEnterpriseAgriculture} onChange={e => setForm({ ...form, isEnterpriseAgriculture: e.target.checked })}/> Enterprise &amp; Agriculture (Homepage Section)</label>
-              <label><input type="checkbox" checked={form.isEnterprise} onChange={e => setForm({ ...form, isEnterprise: e.target.checked })}/> Is it Enterprise product? (Shows Inquiry Now)</label>
+              <label><input type="checkbox" checked={slugify(form.category) === "women-t-shirt"} onChange={e => setForm({ ...form, category: e.target.checked ? "Women T shirt" : "", subcategory: "" })}/> Women T shirt</label>
+              <label><input type="checkbox" checked={slugify(form.category) === "men-t-shirt"} onChange={e => setForm({ ...form, category: e.target.checked ? "Men T shirt" : "", subcategory: "" })}/> Men T shirt</label>
+              <label><input type="checkbox" checked={slugify(form.category) === "hoodie"} onChange={e => setForm({ ...form, category: e.target.checked ? "Hoodie" : "", subcategory: "" })}/> Hoodie</label>
             </div>
           </div>
 

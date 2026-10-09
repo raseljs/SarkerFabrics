@@ -280,10 +280,13 @@ test('admin order actions menu and editable customer details match the order man
   assert.match(source, /customerDraft/);
 });
 
-test('homepage product assignment uses direct product display checkboxes and removes Auto Manual panel', () => {
+test('product display options expose apparel categories and keep legacy data compatibility', () => {
   const source = read('components/admin-products.tsx');
-  for (const text of ['Product display options','New Arrival','DJI Drone','Professional Drone']) assert.ok(source.includes(text), text);
-  assert.match(source, /Enterprise &amp; Agriculture/);
+  for (const text of ['Product display options','New Arrival','Hot and popular','Active','Women T shirt','Men T shirt','Hoodie']) assert.ok(source.includes(text), text);
+  assert.doesNotMatch(source, /\/> DJI Drone<\/label>/);
+  assert.doesNotMatch(source, /\/> Professional Drone<\/label>/);
+  assert.doesNotMatch(source, /\/> Enterprise &amp; Agriculture/);
+  assert.doesNotMatch(source, /\/> Is it Enterprise product\?/);
   assert.doesNotMatch(source, /Homepage product sections/);
   assert.doesNotMatch(source, /<option value="auto">Auto<\/option>/);
   assert.doesNotMatch(source, /AUTO_HOME_SECTION_RULES/);
