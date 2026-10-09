@@ -251,13 +251,15 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
 
   return <>
   <div className={shareStyles.detailHeader}>
-  <div className={utilities("product-tags", [424, "[:where(&).product-tags]:flex [:where(&).product-tags]:[gap:8px] [:where(&).product-tags]:flex-wrap"], [425, "[:where(&).product-tags_span]:[background:#f2f5f8] [:where(&).product-tags_span]:[border-radius:4px] [:where(&).product-tags_span]:[color:#53627b] [:where(&).product-tags_span]:[padding:6px_9px]"], [641, "[:is(:where(&).product-tags_span)]:[font-size:11px]"], [2311, "[:is(:is(:where(&).product-tags_span))]:normal-case"])}>{selectedProduct.sku && <span>Product Code: {selectedProduct.sku}</span>}<span className={tw(Number(selectedProduct.stock||0)>0?"in-stock":"")}>{Number(selectedProduct.stock||0)>0?`In Stock: ${selectedProduct.stock} Items`:selectedProduct.preorderEnabled !== false ? "Out of Stock · Pre-Order Open" : "Out of Stock"}</span></div>
+  <div className="flex items-center justify-between gap-3 max-[640px]:items-start">
+    <div className={utilities("product-tags", [424, "[:where(&).product-tags]:flex [:where(&).product-tags]:[gap:8px] [:where(&).product-tags]:flex-wrap"], [425, "[:where(&).product-tags_span]:[background:#f2f5f8] [:where(&).product-tags_span]:[border-radius:4px] [:where(&).product-tags_span]:[color:#53627b] [:where(&).product-tags_span]:[padding:6px_9px]"], [641, "[:is(:where(&).product-tags_span)]:[font-size:11px]"], [2311, "[:is(:is(:where(&).product-tags_span))]:normal-case"])}>{selectedProduct.sku && <span>Product Code: {selectedProduct.sku}</span>}<span className={tw(Number(selectedProduct.stock||0)>0?"in-stock":"")}>{Number(selectedProduct.stock||0)>0?`In Stock: ${selectedProduct.stock} Items`:selectedProduct.preorderEnabled !== false ? "Out of Stock · Pre-Order Open" : "Out of Stock"}</span></div>
+    <span className="shrink-0 whitespace-nowrap text-[12px] font-medium text-slate-600">
+      {Number(selectedProduct.soldCount || 0).toLocaleString("en-BD")} sold
+    </span>
+  </div>
   <div className="flex items-start justify-between gap-4 max-[640px]:flex-col max-[640px]:gap-1">
     <h1 className="min-w-0 flex-1">{selectedProduct.name}</h1>
     <div className="mt-4 flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 max-[640px]:mt-0 max-[640px]:justify-start">
-      <span className="whitespace-nowrap text-[12px] font-medium text-slate-600">
-        {Number(selectedProduct.soldCount || 0).toLocaleString("en-BD")} sold
-      </span>
       <button
         type="button"
         className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-slate-900"
