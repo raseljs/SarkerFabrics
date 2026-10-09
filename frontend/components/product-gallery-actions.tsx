@@ -91,6 +91,6 @@ export default function ProductGalleryActions({ product }: { product: CatalogPro
       {image && <a className={actionClass} href={image} download aria-label="Download product image" title="Download product image"><Download size={15} /></a>}
       {feedback && <em className="ml-1 whitespace-nowrap text-[10px] not-italic text-emerald-600" role="status">{feedback}</em>}
     </div>
-    <button type="button" className={`inline-flex shrink-0 items-center gap-1.5 border-0 bg-transparent px-0 py-1.5 text-[12px] transition-colors hover:text-red-600 disabled:opacity-60 ${saved ? "text-red-600" : "text-slate-500"}`} aria-label={`${saved ? "Remove from" : "Add to"} wishlist`} aria-pressed={saved} disabled={busy} onClick={() => void toggleWishlist()}><Heart size={16} fill={saved ? "currentColor" : "none"} /><span>{saved ? "Wishlisted" : "Wishlist"}</span></button>
+    <button type="button" className={`inline-flex shrink-0 items-center gap-1.5 border-0 bg-transparent px-0 py-1.5 text-[12px] transition-colors hover:text-red-600 disabled:opacity-60 ${saved ? "text-red-600" : "text-slate-500"}`} aria-label={`${saved ? "Remove from" : "Add to"} favourites`} aria-pressed={saved} disabled={busy} onClick={() => void toggleWishlist()}><Heart size={16} fill={saved ? "currentColor" : "none"} /><span>{saved ? "Favourited" : "Favourite"}</span></button>
   </div>;
 }
