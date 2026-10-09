@@ -16,8 +16,8 @@ const benefits = [
     iconClass: "bg-orange-100 text-orange-600 shadow-[0_3px_9px_rgba(234,88,12,0.18)]",
   },
   {
-    title: "Fast Delivery",
-    subtitle: "All over Bangladesh",
+    title: "Free Home Delivery",
+    subtitle: "All Bangladesh",
     icon: Truck,
     iconClass: "bg-red-100 text-red-600 shadow-[0_3px_9px_rgba(220,38,38,0.18)]",
   },
@@ -45,7 +45,7 @@ export default function ProductBenefits({ variant }: { variant: "desktop" | "mob
             <strong
               className={utilities(
                 "whitespace-nowrap text-[11.5px] font-bold text-slate-800",
-                title === "Fast Delivery" ? "max-[850px]:text-[15px] max-[850px]:leading-5" : "",
+                title === "Free Home Delivery" ? "max-[850px]:text-[15px] max-[850px]:leading-5" : "",
               )}
             >
               {title}
@@ -53,7 +53,7 @@ export default function ProductBenefits({ variant }: { variant: "desktop" | "mob
             <span
               className={utilities(
                 "whitespace-nowrap text-[10px] text-slate-500",
-                title === "Fast Delivery" ? "max-[850px]:text-[11.5px]" : "",
+                title === "Free Home Delivery" ? "max-[850px]:text-[11.5px]" : "",
               )}
             >
               {subtitle}

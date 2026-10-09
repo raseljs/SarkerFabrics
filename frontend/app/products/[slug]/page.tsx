@@ -93,9 +93,6 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
   const specificationRows = specs(selectedProduct.specifications);
   const descriptionHtml = normalizeDescriptionInput(selectedProduct.descriptionHtml || selectedProduct.description || selectedProduct.shortDescription || `${selectedProduct.name} is available from Drone Bangladesh.`);
   const description = cleanText(selectedProduct.shortDescription || selectedProduct.description || descriptionHtml || `${selectedProduct.name} from Drone Bangladesh.`).slice(0, 500);
-  const oldPrice = Number(selectedProduct.oldPrice || selectedProduct.price);
-  const discount = oldPrice > selectedProduct.price ? Math.round((1-selectedProduct.price/oldPrice)*100) : 0;
-
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
