@@ -1,16 +1,17 @@
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import express from "express";
-import * as rateLimitPackage from "express-rate-limit";
-import * as helmetPackage from "helmet";
+import express, { type RequestHandler } from "express";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./common/middleware/error.middleware.js";
 import { apiRouter } from "./routes/index.js";
 
-const rateLimit = rateLimitPackage.default;
-const helmet = helmetPackage.default;
+type MiddlewareFactory = (options?: Record<string, unknown>) => RequestHandler;
+const nodeRequire = createRequire(import.meta.url);
+const rateLimit = nodeRequire("express-rate-limit") as MiddlewareFactory;
+const helmet = nodeRequire("helmet") as MiddlewareFactory;
 
 export const app = express();
 app.set("trust proxy", env.trustProxy);
