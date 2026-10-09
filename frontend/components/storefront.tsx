@@ -6,9 +6,6 @@ import AnnouncementBar from "./announcement-bar";
 
 
 import { withTailwindStyle, utilities, resolveClasses } from "@/lib/tailwind";
-import cardUpdates from "./product-card-updates.module.css";
-import ProductShareButton from "./product-share-button";
-import wishlistStyles from "./wishlist-ui.module.css";
 import { useTimedFeedback } from "@/hooks/use-timed-feedback";
 
 import {
@@ -26,7 +23,6 @@ import {
   Search,
   ShoppingCart,
   Sparkles,
-  TrendingUp,
   Truck,
   UserRound,
   X,
@@ -903,62 +899,23 @@ export function StoreCard({ icon, title, address }: { icon: ReactNode; title: st
   return <article className={utilities("store-card", [97, "[:where(&).store-card]:[border:1px_solid_var(--line)] [:where(&).store-card]:[border-radius:8px] [:where(&).store-card]:flex [:where(&).store-card]:items-center [:where(&).store-card]:[gap:14px]"], [99, "[:where(&).store-card_strong]:block [:where(&).store-card_strong]:[margin-bottom:4px]"], [100, "[:where(&).store-card_p]:[margin:0] [:where(&).store-card_p]:[color:#53627c] [:where(&).store-card_p]:[line-height:1.45]"], [686, "[@media_(max-width:_720px)]:[:where(&).store-card_strong]:[font-size:12px]"], [687, "[@media_(max-width:_720px)]:[:where(&).store-card_p]:[font-size:11px]"], [758, "[:is(:where(&).store-card)]:[min-height:92px] [:is(:where(&).store-card)]:[padding:17px_22px] [:is(:where(&).store-card)]:[background:#fff] [:is(:where(&).store-card)]:[box-shadow:0_7px_22px_rgba(9,_35,_70,_.05)]"], [761, "[:is(:where(&).store-card_strong)]:[font-size:14px]"], [762, "[:is(:where(&).store-card_p)]:[font-size:12px]"])}><span className={utilities("store-icon", [98, "[:where(&).store-icon]:[color:var(--red)]"], [759, "[:is(:where(&).store-icon)]:[width:45px] [:is(:where(&).store-icon)]:[height:45px] [:is(:where(&).store-icon)]:[border-radius:50%] [:is(:where(&).store-icon)]:grid [:is(:where(&).store-icon)]:[place-items:center] [:is(:where(&).store-icon)]:[background:#fff0f0]"], [760, "[:where(&).store-icon_svg]:[color:var(--red)] [:where(&).store-icon_svg]:[width:22px] [:where(&).store-icon_svg]:[height:22px] [:where(&).store-icon_svg]:[stroke-width:2.2]"])}>{icon}</span><div><strong>{title}</strong><p>{address}, Bangladesh</p></div></article>;
 }
 
-export function ProductCard({ product, compact = false }: { product: ProductData; compact?: boolean }) {
+export function ProductCard({ product }: { product: ProductData; compact?: boolean }) {
   const [added, setAdded] = useTimedFeedback(false, 1300);
-  const [saved, setSaved] = useState(false);
-  const [wishlistBusy, setWishlistBusy] = useState(false);
   const [inquiryProduct, setInquiryProduct] = useState<ProductData | null>(null);
-  const isEnterprise = !!(product.isEnterprise);
-  const badgeText = product.badge?.trim();
-  const isNewArrivalBadge = badgeText?.toUpperCase() === "NEW ARRIVAL";
-  const badgeLabel = isNewArrivalBadge ? "New Arrival" : badgeText;
-  const badgeClassName = `${tw(`product-badge ${badgeText === "POPULAR" || badgeText === "BEST SELLER" ? "purple" : ""}`)}${isNewArrivalBadge ? ` ${cardUpdates.newArrivalBadge}` : ""}`;
-
   const [hoverSlide, setHoverSlide] = useState(0);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
-  useEffect(() => {
-    let active = true;
-    const load = () => { void loadWishlistSlugs().then((slugs) => { if (active) setSaved(slugs.has(product.slug)); }); };
-    const idleId = "requestIdleCallback" in window ? window.requestIdleCallback(load, { timeout: 5500 }) : 0;
-    const timerId = !idleId ? setTimeout(load, 4000) : 0;
-    const refresh = () => { load(); };
-    window.addEventListener("drone-wishlist-updated", refresh);
-    return () => {
-      window.removeEventListener("drone-wishlist-updated", refresh);
-      active = false;
-      if (idleId) window.cancelIdleCallback(idleId);
-      if (timerId) window.clearTimeout(timerId);
-    };
-  }, [product.slug]);
-  async function toggleWishlist() {
-    if (wishlistBusy) return;
-    setWishlistBusy(true);
-    try {
-    const nextSaved = !saved;
-    setSaved(nextSaved);
-    if (getApiBase()) {
-      try {
-        await apiRequest(`/account/wishlist/${encodeURIComponent(product.slug)}`, { method: nextSaved ? "POST" : "DELETE" });
-        wishlistSlugsPromise = null;
-        window.dispatchEvent(new Event("drone-wishlist-updated"));
-        return;
-      } catch { /* not signed in: keep a local wishlist */ }
-    }
-    try {
-      const key = "drone-bangladesh-wishlist";
-      const items = JSON.parse(window.localStorage.getItem(key) || "[]") as ProductData[];
-      const exists = items.some((item) => item.slug === product.slug);
-      const next = nextSaved && !exists ? [product, ...items] : !nextSaved ? items.filter((item) => item.slug !== product.slug) : items;
-      window.localStorage.setItem(key, JSON.stringify(next));
-      wishlistSlugsPromise = null;
-      window.dispatchEvent(new Event("drone-wishlist-updated"));
-    } catch { setSaved(saved); }
-    } finally { setWishlistBusy(false); }
-  }
   const imageSlides = Array.from(new Set(
     [product.image, ...(product.images || []), product.hoverImage]
       .filter((image): image is string => typeof image === "string" && image.trim().length > 0),
   ));
+  const displayedImage = imageSlides[hoverSlide] || product.image;
+  const inStock = Number(product.stock || 0) > 0;
+
+  useEffect(() => {
+    if (!isHoveringImage || imageSlides.length < 2) return;
+    const timer = window.setInterval(() => setHoverSlide((current) => (current + 1) % imageSlides.length), 650);
+    return () => window.clearInterval(timer);
+  }, [isHoveringImage, imageSlides.length]);
 
   function startImagePreview() {
     setHoverSlide(imageSlides.length > 1 ? 1 : 0);
@@ -970,107 +927,63 @@ export function ProductCard({ product, compact = false }: { product: ProductData
     setHoverSlide(0);
   }
 
-  useEffect(() => {
-    if (!isHoveringImage || imageSlides.length < 2) return;
-    const timer = window.setInterval(() => {
-      setHoverSlide((current) => (current + 1) % imageSlides.length);
-    }, 520);
-    return () => window.clearInterval(timer);
-  }, [isHoveringImage, imageSlides.length]);
-
-  if (compact) {
-    return (
-      <article className={utilities(wishlistStyles.card, cardUpdates.card, "product-card is-compact", [108, "[:where(&).product-card]:cursor-pointer [:where(&).product-card]:[background:#ffffff] [:where(&).product-card]:[border:1px_solid_var(--line)] [:where(&).product-card]:[border-radius:16px] [:where(&).product-card]:[padding:16px] [:where(&).product-card]:[transition:transform_0.2s_ease,_box-shadow_0.2s_ease,_border-color_0.2s_ease] [:where(&).product-card]:flex [:where(&).product-card]:flex-col [:where(&).product-card]:relative"], [109, "[:where(&).product-card:hover]:[transform:translateY(-4px)] [:where(&).product-card:hover]:[box-shadow:0_16px_32px_rgba(11,_23,_48,_0.08)] [:where(&).product-card:hover]:[border-color:#cbd5e1]"], [111, "[:where(&).product-card_h3]:[line-height:1.45] [:where(&).product-card_h3]:[min-height:38px] [:where(&).product-card_h3]:[margin:0_0_9px] [:where(&).product-card_h3]:overflow-hidden [:where(&).product-card_h3]:[display:-webkit-box] [:where(&).product-card_h3]:[-webkit-line-clamp:2] [:where(&).product-card_h3]:[-webkit-box-orient:vertical]"], [118, "[.compact_:where(&).product-card]:[padding-bottom:9px]"], [528, "[@media_(max-width:_720px)]:[:where(&).product-card]:[padding:7px]"], [586, "[@media_(max-width:_720px)]:[.product-rail.is-compact_:where(&).product-card,_:where(&).product-card]:[min-height:0] [@media_(max-width:_720px)]:[.product-rail.is-compact_:where(&).product-card,_:where(&).product-card]:[height:auto] [@media_(max-width:_720px)]:[.product-rail.is-compact_:where(&).product-card,_:where(&).product-card]:[padding:8px] [@media_(max-width:_720px)]:[.product-rail.is-compact_:where(&).product-card,_:where(&).product-card]:[border-radius:8px]"], [588, "[@media_(max-width:_720px)]:[:where(&).product-card_h3]:[min-height:34px] [@media_(max-width:_720px)]:[:where(&).product-card_h3]:[margin-bottom:6px]"], [591, "[@media_(max-width:_720px)]:[.product-card_:where(&).add-cart-button,_:where(&).product-card_button]:[min-height:34px] [@media_(max-width:_720px)]:[.product-card_:where(&).add-cart-button,_:where(&).product-card_button]:[font-size:11px]"], [608, "[:is(:where(&).product-card_h3)]:[font-size:14px]"], [688, "[@media_(max-width:_720px)]:[:is(:where(&).product-card_h3)]:[font-size:12px]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:grid [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[grid-template-rows:1fr_auto] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:relative"])}  onMouseEnter={startImagePreview} onMouseLeave={stopImagePreview} onFocus={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) startImagePreview(); }} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) stopImagePreview(); }}>
-        <ProductShareButton name={product.name} slug={product.slug} />
-        <button type="button" className={wishlistStyles.button} aria-label={`${saved ? "Remove from" : "Add to"} wishlist: ${product.name}`} aria-pressed={saved} disabled={wishlistBusy} onClick={() => void toggleWishlist()}><Heart size={20} fill={saved ? "currentColor" : "none"}/></button>
-        {badgeText && <span className={badgeClassName}>{isNewArrivalBadge && <TrendingUp size={13} aria-hidden="true" />}{badgeLabel}</span>}
-        <div className={utilities([10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex-col"])}>
-          <Link href={`/products/${product.slug}`} className={tw(`product-image ${imageSlides.length > 1 ? "has-hover-image" : ""}`)}>
-            <Image src={imageSlides[hoverSlide] || product.image} alt={product.name} width={420} height={320} sizes="(max-width: 640px) 72vw, (max-width: 1100px) 30vw, 18vw" quality={72} className={tw(imageSlides.length > 1 ? "product-slide-image" : undefined)} unoptimized={(imageSlides[hoverSlide] || product.image).startsWith("data:")} />
-          </Link>
-          <Link href={`/products/${product.slug}`}><h3>{product.name}</h3></Link>
-          <p className={utilities("product-meta", [112, "[:where(&).product-meta]:[color:#626e83] [:where(&).product-meta]:[margin:0_0_10px] [:where(&).product-meta]:whitespace-nowrap [:where(&).product-meta]:overflow-hidden [:where(&).product-meta]:text-ellipsis"], [589, "[@media_(max-width:_720px)]:[:where(&).product-meta]:[margin-bottom:6px]"], [609, "[:is(:where(&).product-meta)]:[font-size:12px]"], [689, "[@media_(max-width:_720px)]:[:is(:where(&).product-meta)]:[font-size:10px]"])}>{Number(product.stock || 0) > 0 ? "In stock" : product.preorderEnabled !== false ? "Out of stock · Pre-Order" : "Out of stock"}</p>
-          <div className={utilities("price-row", [113, "[:where(&).price-row]:flex [:where(&).price-row]:[gap:7px] [:where(&).price-row]:items-baseline [:where(&).price-row]:flex-wrap"], [590, "[@media_(max-width:_720px)]:[:where(&).price-row]:[margin-top:2px]"], [2873, "[.accessory-store-card_:where(&).price-row]:flex [.accessory-store-card_:where(&).price-row]:items-center [.accessory-store-card_:where(&).price-row]:[gap:8px] [.accessory-store-card_:where(&).price-row]:[margin-bottom:14px]"], [2909, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).price-row]:[margin-bottom:10px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).price-row]:flex-wrap [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).price-row]:[gap:4px]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[margin-top:auto]"])} ><span className={utilities("price", [114, "[:where(&).price]:[color:var(--red)] [:where(&).price]:font-extrabold"], [610, "[:is(:where(&).price)]:[font-size:20px]"], [690, "[@media_(max-width:_720px)]:[:where(&).price]:[font-size:17px]"], [2874, "[.accessory-store-card_:where(&).price]:[font-size:17px] [.accessory-store-card_:where(&).price]:font-bold [.accessory-store-card_:where(&).price]:[color:var(--primary)]"], [2910, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).price]:[font-size:15px]"])}>{price(product.price)}</span><span className={utilities("old-price", [115, "[:where(&).old-price]:[color:#687384] [:where(&).old-price]:[text-decoration:line-through]"], [611, "[:is(:where(&).old-price)]:[font-size:12px]"], [2875, "[.accessory-store-card_:where(&).old-price]:[font-size:13px] [.accessory-store-card_:where(&).old-price]:[color:var(--text-light)] [.accessory-store-card_:where(&).old-price]:[text-decoration:line-through]"], [2911, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).old-price]:[font-size:12px]"])}>{price(product.oldPrice)}</span></div>
-        </div>
-        {isEnterprise ? (
-          <button className={utilities("add-cart", [116, "[:where(&).add-cart]:[width:100%] [:where(&).add-cart]:[border:0] [:where(&).add-cart]:[background:var(--navy)] [:where(&).add-cart]:[color:#fff] [:where(&).add-cart]:[height:34px] [:where(&).add-cart]:[border-radius:4px] [:where(&).add-cart]:[margin-top:auto] [:where(&).add-cart]:cursor-pointer [:where(&).add-cart]:font-bold [:where(&).add-cart]:box-border [:where(&).add-cart]:flex [:where(&).add-cart]:items-center [:where(&).add-cart]:justify-center [:where(&).add-cart]:[text-decoration:none]"], [117, "[:where(&).add-cart:hover]:[background:#124474]"], [612, "[:is(:where(&).add-cart)]:[font-size:12px]"], [691, "[@media_(max-width:_720px)]:[:where(&).add-cart]:[font-size:11px]"], [2876, "[.accessory-store-card_:where(&).add-cart]:[width:100%] [.accessory-store-card_:where(&).add-cart]:[padding:10px] [.accessory-store-card_:where(&).add-cart]:box-border [.accessory-store-card_:where(&).add-cart]:[background:#fff] [.accessory-store-card_:where(&).add-cart]:[border:1px_solid_#071d39] [.accessory-store-card_:where(&).add-cart]:[color:#071d39] [.accessory-store-card_:where(&).add-cart]:[border-radius:6px] [.accessory-store-card_:where(&).add-cart]:[font-size:14px] [.accessory-store-card_:where(&).add-cart]:font-medium [.accessory-store-card_:where(&).add-cart]:cursor-pointer [.accessory-store-card_:where(&).add-cart]:[transition:all_0.2s] [.accessory-store-card_:where(&).add-cart]:[margin-top:auto] [.accessory-store-card_:where(&).add-cart]:flex [.accessory-store-card_:where(&).add-cart]:items-center [.accessory-store-card_:where(&).add-cart]:justify-center"], [2877, "[.accessory-store-card_:where(&).add-cart:hover]:[background:#071d39] [.accessory-store-card_:where(&).add-cart:hover]:[color:#fff]"], [2912, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[padding:8px_4px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[font-size:11px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[border-radius:6px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:whitespace-nowrap [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:overflow-hidden [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:text-ellipsis"])} onClick={() => setInquiryProduct(product)} aria-label={`Inquiry: ${product.name}`}>
-            ✉ Inquiry Now
-          </button>
-        ) : Number(product.stock || 0) > 0 ? (
-          <button className={utilities("add-cart", [116, "[:where(&).add-cart]:[width:100%] [:where(&).add-cart]:[border:0] [:where(&).add-cart]:[background:var(--navy)] [:where(&).add-cart]:[color:#fff] [:where(&).add-cart]:[height:34px] [:where(&).add-cart]:[border-radius:4px] [:where(&).add-cart]:[margin-top:auto] [:where(&).add-cart]:cursor-pointer [:where(&).add-cart]:font-bold [:where(&).add-cart]:box-border [:where(&).add-cart]:flex [:where(&).add-cart]:items-center [:where(&).add-cart]:justify-center [:where(&).add-cart]:[text-decoration:none]"], [117, "[:where(&).add-cart:hover]:[background:#124474]"], [612, "[:is(:where(&).add-cart)]:[font-size:12px]"], [691, "[@media_(max-width:_720px)]:[:where(&).add-cart]:[font-size:11px]"], [2876, "[.accessory-store-card_:where(&).add-cart]:[width:100%] [.accessory-store-card_:where(&).add-cart]:[padding:10px] [.accessory-store-card_:where(&).add-cart]:box-border [.accessory-store-card_:where(&).add-cart]:[background:#fff] [.accessory-store-card_:where(&).add-cart]:[border:1px_solid_#071d39] [.accessory-store-card_:where(&).add-cart]:[color:#071d39] [.accessory-store-card_:where(&).add-cart]:[border-radius:6px] [.accessory-store-card_:where(&).add-cart]:[font-size:14px] [.accessory-store-card_:where(&).add-cart]:font-medium [.accessory-store-card_:where(&).add-cart]:cursor-pointer [.accessory-store-card_:where(&).add-cart]:[transition:all_0.2s] [.accessory-store-card_:where(&).add-cart]:[margin-top:auto] [.accessory-store-card_:where(&).add-cart]:flex [.accessory-store-card_:where(&).add-cart]:items-center [.accessory-store-card_:where(&).add-cart]:justify-center"], [2877, "[.accessory-store-card_:where(&).add-cart:hover]:[background:#071d39] [.accessory-store-card_:where(&).add-cart:hover]:[color:#fff]"], [2912, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[padding:8px_4px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[font-size:11px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[border-radius:6px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:whitespace-nowrap [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:overflow-hidden [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:text-ellipsis"])} onClick={() => { void addToCart(product).then(() => { setAdded(true); }).catch(() => setAdded(false)); }} aria-label={`${added ? "Added to Cart" : "Add to Cart"}: ${product.name}`}>{added ? "Added to Cart ✓" : "Add to Cart"}</button>
-        ) : (
-          <Link className={utilities("add-cart preorder-card-action", [116, "[:where(&).add-cart]:[width:100%] [:where(&).add-cart]:[border:0] [:where(&).add-cart]:[background:var(--navy)] [:where(&).add-cart]:[color:#fff] [:where(&).add-cart]:[height:34px] [:where(&).add-cart]:[border-radius:4px] [:where(&).add-cart]:[margin-top:auto] [:where(&).add-cart]:cursor-pointer [:where(&).add-cart]:font-bold [:where(&).add-cart]:box-border [:where(&).add-cart]:flex [:where(&).add-cart]:items-center [:where(&).add-cart]:justify-center [:where(&).add-cart]:[text-decoration:none]"], [117, "[:where(&).add-cart:hover]:[background:#124474]"], [612, "[:is(:where(&).add-cart)]:[font-size:12px]"], [691, "[@media_(max-width:_720px)]:[:where(&).add-cart]:[font-size:11px]"], [1228, "[:where(&).preorder-card-action]:flex [:where(&).preorder-card-action]:items-center [:where(&).preorder-card-action]:justify-center [:where(&).preorder-card-action]:[background:#e51e2a]"], [2876, "[.accessory-store-card_:where(&).add-cart]:[width:100%] [.accessory-store-card_:where(&).add-cart]:[padding:10px] [.accessory-store-card_:where(&).add-cart]:box-border [.accessory-store-card_:where(&).add-cart]:[background:#fff] [.accessory-store-card_:where(&).add-cart]:[border:1px_solid_#071d39] [.accessory-store-card_:where(&).add-cart]:[color:#071d39] [.accessory-store-card_:where(&).add-cart]:[border-radius:6px] [.accessory-store-card_:where(&).add-cart]:[font-size:14px] [.accessory-store-card_:where(&).add-cart]:font-medium [.accessory-store-card_:where(&).add-cart]:cursor-pointer [.accessory-store-card_:where(&).add-cart]:[transition:all_0.2s] [.accessory-store-card_:where(&).add-cart]:[margin-top:auto] [.accessory-store-card_:where(&).add-cart]:flex [.accessory-store-card_:where(&).add-cart]:items-center [.accessory-store-card_:where(&).add-cart]:justify-center"], [2877, "[.accessory-store-card_:where(&).add-cart:hover]:[background:#071d39] [.accessory-store-card_:where(&).add-cart:hover]:[color:#fff]"], [2912, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[padding:8px_4px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[font-size:11px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:[border-radius:6px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:whitespace-nowrap [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:overflow-hidden [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).add-cart]:text-ellipsis"])} href={`/products/${encodeURIComponent(product.slug)}#preorder`} aria-label={`Pre-order ${product.name}`}>Pre-Order</Link>
-        )}
-        {inquiryProduct && (
-          <InquiryModal product={{ slug: inquiryProduct.slug, name: inquiryProduct.name, image: inquiryProduct.image }} onClose={() => setInquiryProduct(null)} />
-        )}
-      </article>
-    );
+  function addProduct() {
+    if (product.isEnterprise) {
+      setInquiryProduct(product);
+      return;
+    }
+    if (!inStock) return;
+    void addToCart(product).then(() => setAdded(true)).catch(() => setAdded(false));
   }
 
+  const actionClass = "inline-flex h-8 w-8 shrink-0 items-center justify-center border-0 bg-transparent p-0 text-[24px] font-light leading-none text-[#222] transition-opacity hover:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111]";
+
   return (
-    <article className={utilities(wishlistStyles.card, cardUpdates.card, "accessory-store-card", [2865, "[:where(&).accessory-store-card]:[border:1px_solid_var(--line)] [:where(&).accessory-store-card]:[border-radius:8px] [:where(&).accessory-store-card]:[background:#fff] [:where(&).accessory-store-card]:overflow-hidden [:where(&).accessory-store-card]:flex [:where(&).accessory-store-card]:flex-col [:where(&).accessory-store-card]:[transition:box-shadow_0.2s,_border-color_0.2s]"], [2866, "[:where(&).accessory-store-card>div]:[min-width:0]"], [2867, "[:where(&).accessory-store-card:hover]:[border-color:#d0d7e5] [:where(&).accessory-store-card:hover]:[box-shadow:0_8px_24px_rgba(16,_46,_89,_0.06)]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:grid [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[grid-template-rows:1fr_auto] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:relative"])}  onMouseEnter={startImagePreview} onMouseLeave={stopImagePreview} onFocus={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) startImagePreview(); }} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) stopImagePreview(); }}>
-        <ProductShareButton name={product.name} slug={product.slug} />
-        <button type="button" className={wishlistStyles.button} aria-label={`${saved ? "Remove from" : "Add to"} wishlist: ${product.name}`} aria-pressed={saved} disabled={wishlistBusy} onClick={() => void toggleWishlist()}><Heart size={20} fill={saved ? "currentColor" : "none"}/></button>
-      {badgeText && <span className={`${badgeClassName} ${utilities([10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[z-index:10]"])}`}>{isNewArrivalBadge && <TrendingUp size={13} aria-hidden="true" />}{badgeLabel}</span>}
-      <div className={utilities([10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex-col [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[min-width:0]"])}>
-        <Link href={`/products/${product.slug}`} className={utilities("accessory-store-image", [2868, "[:where(&).accessory-store-image]:[background:#fbfcfe] [:where(&).accessory-store-image]:[height:190px] [:where(&).accessory-store-image]:block [:where(&).accessory-store-image]:[border-bottom:1px_solid_var(--line)] [:where(&).accessory-store-image]:overflow-hidden"], [2905, "[@media_(max-width:_768px)]:[:where(&).accessory-store-image]:[height:140px]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:block [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[width:100%] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[aspect-ratio:1/1] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:relative [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[background-color:#f8fafc] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[border-radius:8px_8px_0_0] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:overflow-hidden"])} >
-          <Image
-            src={imageSlides[hoverSlide] || product.image}
-            alt={product.name}
-            fill
-            {...withTailwindStyle(tw(undefined), { objectFit: "contain", padding: "16px", opacity: isHoveringImage ? 0.9 : 1, transition: "opacity 0.2s" })}
-            sizes="(max-width: 640px) 90vw, (max-width: 1100px) 40vw, 280px"
-            quality={72}
-            unoptimized={(imageSlides[hoverSlide] || product.image).startsWith("data:")}
-          />
+    <article
+      className="relative flex min-w-0 flex-col bg-transparent"
+      onMouseEnter={startImagePreview}
+      onMouseLeave={stopImagePreview}
+      onFocus={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) startImagePreview(); }}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) stopImagePreview(); }}
+    >
+      <Link href={`/products/${product.slug}`} className="relative block aspect-[4/5] w-full overflow-hidden bg-[#f5f5f3]">
+        <Image
+          src={displayedImage}
+          alt={product.name}
+          fill
+          className="object-contain p-2 transition-opacity duration-200 sm:p-4"
+          sizes="(max-width: 720px) 50vw, (max-width: 1100px) 33vw, 25vw"
+          quality={76}
+          unoptimized={displayedImage.startsWith("data:")}
+        />
+        {product.badge?.trim() && (
+          <span className="absolute left-2 top-2 bg-white/90 px-2 py-1 text-[9px] font-medium uppercase tracking-[0.08em] text-[#222]">
+            {product.badge.trim()}
+          </span>
+        )}
+      </Link>
+
+      <div className="flex items-start gap-1.5 pb-5 pt-2 sm:gap-2 sm:pt-2.5">
+        <Link href={`/products/${product.slug}`} className="min-w-0 flex-1 text-[#222] no-underline">
+          <h3 className="m-0 truncate text-[11px] font-normal uppercase leading-4 tracking-[0.01em] sm:text-[13px] sm:leading-5">
+            {product.name}
+          </h3>
+          <p className="m-0 mt-0.5 text-[12px] font-normal leading-4 text-[#444] sm:text-[14px] sm:leading-5">
+            {price(product.price)}
+          </p>
         </Link>
-        <div className={utilities("accessory-store-info", [2870, "[:where(&).accessory-store-info]:[padding:16px] [:where(&).accessory-store-info]:flex [:where(&).accessory-store-info]:flex-col [:where(&).accessory-store-info]:[flex-grow:1]"], [2871, "[:where(&).accessory-store-info_h3]:[font-size:15px] [:where(&).accessory-store-info_h3]:font-semibold [:where(&).accessory-store-info_h3]:[color:var(--text)] [:where(&).accessory-store-info_h3]:[margin:0_0_6px] [:where(&).accessory-store-info_h3]:[line-height:1.3]"], [2906, "[@media_(max-width:_768px)]:[:where(&).accessory-store-info]:[padding:10px]"], [2907, "[@media_(max-width:_768px)]:[:where(&).accessory-store-info_h3]:[font-size:13px] [@media_(max-width:_768px)]:[:where(&).accessory-store-info_h3]:[margin-bottom:4px] [@media_(max-width:_768px)]:[:where(&).accessory-store-info_h3]:[display:-webkit-box] [@media_(max-width:_768px)]:[:where(&).accessory-store-info_h3]:[-webkit-line-clamp:2] [@media_(max-width:_768px)]:[:where(&).accessory-store-info_h3]:[-webkit-box-orient:vertical] [@media_(max-width:_768px)]:[:where(&).accessory-store-info_h3]:overflow-hidden"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[flex-grow:1] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex-col"])} >
-          <Link href={`/products/${product.slug}`} className={utilities([10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[text-decoration:none]"])}>
-            <h3>{product.name}</h3>
-          </Link>
-          <p className={utilities("accessory-store-desc", [2872, "[:where(&).accessory-store-desc]:[font-size:13px] [:where(&).accessory-store-desc]:[color:var(--text-light)] [:where(&).accessory-store-desc]:[margin:0_0_12px] [:where(&).accessory-store-desc]:[line-height:1.4]"], [2908, "[@media_(max-width:_768px)]:[:where(&).accessory-store-desc]:[font-size:11px] [@media_(max-width:_768px)]:[:where(&).accessory-store-desc]:[margin-bottom:8px] [@media_(max-width:_768px)]:[:where(&).accessory-store-desc]:[display:-webkit-box] [@media_(max-width:_768px)]:[:where(&).accessory-store-desc]:[-webkit-line-clamp:2] [@media_(max-width:_768px)]:[:where(&).accessory-store-desc]:[-webkit-box-orient:vertical] [@media_(max-width:_768px)]:[:where(&).accessory-store-desc]:overflow-hidden"])}>{Number(product.stock || 0) > 0 ? "In stock" : product.preorderEnabled !== false ? "Out of stock · Pre-Order" : "Out of stock"}</p>
-          <div className={utilities("price-row", [113, "[:where(&).price-row]:flex [:where(&).price-row]:[gap:7px] [:where(&).price-row]:items-baseline [:where(&).price-row]:flex-wrap"], [590, "[@media_(max-width:_720px)]:[:where(&).price-row]:[margin-top:2px]"], [2873, "[.accessory-store-card_:where(&).price-row]:flex [.accessory-store-card_:where(&).price-row]:items-center [.accessory-store-card_:where(&).price-row]:[gap:8px] [.accessory-store-card_:where(&).price-row]:[margin-bottom:14px]"], [2909, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).price-row]:[margin-bottom:10px] [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).price-row]:flex-wrap [@media_(max-width:_768px)]:[.accessory-store-card_:where(&).price-row]:[gap:4px]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[margin-top:auto]"])} >
-            <span className={utilities("price", [114, "[:where(&).price]:[color:var(--red)] [:where(&).price]:font-extrabold"], [610, "[:is(:where(&).price)]:[font-size:20px]"], [690, "[@media_(max-width:_720px)]:[:where(&).price]:[font-size:17px]"], [2874, "[.accessory-store-card_:where(&).price]:[font-size:17px] [.accessory-store-card_:where(&).price]:font-bold [.accessory-store-card_:where(&).price]:[color:var(--primary)]"], [2910, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).price]:[font-size:15px]"])}>{price(product.price)}</span>
-            {Number(product.oldPrice || 0) > product.price && (
-              <span className={utilities("old-price", [115, "[:where(&).old-price]:[color:#687384] [:where(&).old-price]:[text-decoration:line-through]"], [611, "[:is(:where(&).old-price)]:[font-size:12px]"], [2875, "[.accessory-store-card_:where(&).old-price]:[font-size:13px] [.accessory-store-card_:where(&).old-price]:[color:var(--text-light)] [.accessory-store-card_:where(&).old-price]:[text-decoration:line-through]"], [2911, "[@media_(max-width:_768px)]:[.accessory-store-card_:where(&).old-price]:[font-size:12px]"])}>{price(product.oldPrice)}</span>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className={utilities([10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[padding:0_16px_16px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[min-width:0]"])}>
-        {isEnterprise ? (
-          <button
-            className={utilities("inquiry-now-btn inquiry-now-card-btn", [2929, "[:where(&).inquiry-now-btn]:inline-flex [:where(&).inquiry-now-btn]:items-center [:where(&).inquiry-now-btn]:justify-center [:where(&).inquiry-now-btn]:[gap:7px] [:where(&).inquiry-now-btn]:[background:#0b1f38] [:where(&).inquiry-now-btn]:[color:#fff] [:where(&).inquiry-now-btn]:[border:0] [:where(&).inquiry-now-btn]:[border-radius:6px] [:where(&).inquiry-now-btn]:[font-size:14px] [:where(&).inquiry-now-btn]:font-semibold [:where(&).inquiry-now-btn]:cursor-pointer [:where(&).inquiry-now-btn]:[transition:background_0.18s_ease,_transform_0.14s_ease] [:where(&).inquiry-now-btn]:whitespace-nowrap"], [2930, "[:where(&).inquiry-now-btn:hover]:[background:#162d50] [:where(&).inquiry-now-btn:hover]:[transform:translateY(-1px)]"], [2931, "[:where(&).inquiry-now-btn:active]:[transform:translateY(0)]"], [2932, "[:where(&).inquiry-now-card-btn]:[width:100%] [:where(&).inquiry-now-card-btn]:[padding:10px] [:where(&).inquiry-now-card-btn]:[min-height:34px] [:where(&).inquiry-now-card-btn]:[border-radius:6px] [:where(&).inquiry-now-card-btn]:[font-size:14px] [:where(&).inquiry-now-card-btn]:box-border"])}
-            onClick={() => setInquiryProduct(product)}
-            aria-label={`Inquiry Now: ${product.name}`}
-          >
-            ✉ Inquiry Now
-          </button>
-        ) : Number(product.stock || 0) > 0 ? (
-          <button
-            className={utilities("button button-primary", [62, "[:where(&).button]:[min-height:39px] [:where(&).button]:inline-flex [:where(&).button]:items-center [:where(&).button]:justify-center [:where(&).button]:[gap:7px] [:where(&).button]:[border-radius:4px] [:where(&).button]:[padding:0_17px] [:where(&).button]:font-bold [:where(&).button]:cursor-pointer [:where(&).button]:[border:1px_solid_transparent]"], [63, "[:where(&).button-primary]:[background:var(--navy)] [:where(&).button-primary]:[color:#fff]"], [64, "[:where(&).button-primary:hover]:[background:#123d6b]"], [280, "[.cart-summary_:where(&).button]:[width:100%] [.cart-summary_:where(&).button]:[margin-top:12px]"], [286, "[.checkout-form>:where(&).button]:[width:max-content] [.checkout-form>:where(&).button]:[margin-top:6px]"], [492, "[.accessory-card_:where(&).button]:[width:100%] [.accessory-card_:where(&).button]:[margin-top:12px] [.accessory-card_:where(&).button]:[border-radius:6px] [.accessory-card_:where(&).button]:text-ellipsis [.accessory-card_:where(&).button]:overflow-hidden [.accessory-card_:where(&).button]:whitespace-nowrap"], [603, "[:is(:where(&).button)]:[font-size:14px]"], [654, "[:is(.accessory-card_:where(&).button)]:[font-size:10px] [:is(.accessory-card_:where(&).button)]:[padding:0_4px] [:is(.accessory-card_:where(&).button)]:[min-height:30px]"], [683, "[@media_(max-width:_720px)]:[:where(&).button,_:where(&).text-link]:[font-size:12px]"], [809, "[.package-card_footer_:where(&).button]:[font-size:11px] [.package-card_footer_:where(&).button]:[min-height:32px] [.package-card_footer_:where(&).button]:[padding:0_13px]"], [818, "[.maintenance-cta_:where(&).button]:[margin-right:15px]"], [837, "[@media_(max-width:_720px)]:[.maintenance-cta_:where(&).button]:[margin:0_0_12px]"], [1225, "[.combo-modal>footer_:where(&).button]:[min-height:36px]"], [1289, "[@media_(max-width:_720px)]:[.combo-modal>footer_:where(&).button]:[width:100%]"], [2383, "[@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:inline-block [@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:[margin-top:15px]"], [2479, "[.reference-toolbar_:where(&).button]:[height:34px] [.reference-toolbar_:where(&).button]:[padding:0_10px] [.reference-toolbar_:where(&).button]:[font-size:10px]"], [2491, "[.order-actions_:where(&).button]:[font-size:9px] [.order-actions_:where(&).button]:[padding:6px_14px]"], [2542, "[.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[height:34px] [.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[font-size:9px]"], [2579, "[.order-confirmation-actions_:where(&).button]:flex [.order-confirmation-actions_:where(&).button]:items-center [.order-confirmation-actions_:where(&).button]:justify-center [.order-confirmation-actions_:where(&).button]:[gap:7px] [.order-confirmation-actions_:where(&).button]:[min-height:43px] [.order-confirmation-actions_:where(&).button]:[text-decoration:none]"], [2587, "[.invoice-actions_:where(&).button]:flex [.invoice-actions_:where(&).button]:items-center [.invoice-actions_:where(&).button]:justify-center [.invoice-actions_:where(&).button]:[gap:6px]"], [2627, "[@media_(max-width:680px)]:[.invoice-actions_:where(&).button]:[flex:1_1_100%]"], [2653, "[.drawer-edit-actions_:where(&).button]:[height:31px] [.drawer-edit-actions_:where(&).button]:[padding:0_11px] [.drawer-edit-actions_:where(&).button]:[font-size:9px]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[width:100%] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[padding:10px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[border-radius:6px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[font-size:14px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[min-height:34px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:items-center [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:justify-center [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:box-border"])}
-            
-            onClick={() => { void addToCart(product).then(() => { setAdded(true); }).catch(() => setAdded(false)); }}
-            aria-label={`${added ? "Added to Cart" : "Buy Now"}: ${product.name}`}
-          >
-            {added ? "Added to Cart ✓" : "Buy Now"}
+
+        {inStock || product.isEnterprise ? (
+          <button type="button" className={actionClass} onClick={addProduct} aria-label={`${product.isEnterprise ? "Ask about" : "Add to cart"}: ${product.name}`}>
+            {added ? "✓" : "+"}
           </button>
         ) : product.preorderEnabled !== false ? (
-          <Link
-            href={`/products/${encodeURIComponent(product.slug)}#preorder`}
-            className={utilities("button button-red", [62, "[:where(&).button]:[min-height:39px] [:where(&).button]:inline-flex [:where(&).button]:items-center [:where(&).button]:justify-center [:where(&).button]:[gap:7px] [:where(&).button]:[border-radius:4px] [:where(&).button]:[padding:0_17px] [:where(&).button]:font-bold [:where(&).button]:cursor-pointer [:where(&).button]:[border:1px_solid_transparent]"], [65, "[:where(&).button-red]:[background:var(--red)] [:where(&).button-red]:[color:#fff]"], [280, "[.cart-summary_:where(&).button]:[width:100%] [.cart-summary_:where(&).button]:[margin-top:12px]"], [286, "[.checkout-form>:where(&).button]:[width:max-content] [.checkout-form>:where(&).button]:[margin-top:6px]"], [446, "[.purchase-actions>:where(&).button-red]:[min-height:35px] [.purchase-actions>:where(&).button-red]:[flex:1]"], [447, "[.purchase-actions_:where(&).cart-action,_.purchase-actions_:where(&).button-red]:[font-size:16px]"], [492, "[.accessory-card_:where(&).button]:[width:100%] [.accessory-card_:where(&).button]:[margin-top:12px] [.accessory-card_:where(&).button]:[border-radius:6px] [.accessory-card_:where(&).button]:text-ellipsis [.accessory-card_:where(&).button]:overflow-hidden [.accessory-card_:where(&).button]:whitespace-nowrap"], [603, "[:is(:where(&).button)]:[font-size:14px]"], [654, "[:is(.accessory-card_:where(&).button)]:[font-size:10px] [:is(.accessory-card_:where(&).button)]:[padding:0_4px] [:is(.accessory-card_:where(&).button)]:[min-height:30px]"], [683, "[@media_(max-width:_720px)]:[:where(&).button,_:where(&).text-link]:[font-size:12px]"], [809, "[.package-card_footer_:where(&).button]:[font-size:11px] [.package-card_footer_:where(&).button]:[min-height:32px] [.package-card_footer_:where(&).button]:[padding:0_13px]"], [818, "[.maintenance-cta_:where(&).button]:[margin-right:15px]"], [837, "[@media_(max-width:_720px)]:[.maintenance-cta_:where(&).button]:[margin:0_0_12px]"], [1225, "[.combo-modal>footer_:where(&).button]:[min-height:36px]"], [1289, "[@media_(max-width:_720px)]:[.combo-modal>footer_:where(&).button]:[width:100%]"], [2189, "[.purchase-actions_:where(&).button-red]:[background:var(--red)]"], [2383, "[@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:inline-block [@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:[margin-top:15px]"], [2479, "[.reference-toolbar_:where(&).button]:[height:34px] [.reference-toolbar_:where(&).button]:[padding:0_10px] [.reference-toolbar_:where(&).button]:[font-size:10px]"], [2491, "[.order-actions_:where(&).button]:[font-size:9px] [.order-actions_:where(&).button]:[padding:6px_14px]"], [2542, "[.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[height:34px] [.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[font-size:9px]"], [2579, "[.order-confirmation-actions_:where(&).button]:flex [.order-confirmation-actions_:where(&).button]:items-center [.order-confirmation-actions_:where(&).button]:justify-center [.order-confirmation-actions_:where(&).button]:[gap:7px] [.order-confirmation-actions_:where(&).button]:[min-height:43px] [.order-confirmation-actions_:where(&).button]:[text-decoration:none]"], [2587, "[.invoice-actions_:where(&).button]:flex [.invoice-actions_:where(&).button]:items-center [.invoice-actions_:where(&).button]:justify-center [.invoice-actions_:where(&).button]:[gap:6px]"], [2627, "[@media_(max-width:680px)]:[.invoice-actions_:where(&).button]:[flex:1_1_100%]"], [2653, "[.drawer-edit-actions_:where(&).button]:[height:31px] [.drawer-edit-actions_:where(&).button]:[padding:0_11px] [.drawer-edit-actions_:where(&).button]:[font-size:9px]"], [2830, "[@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[flex:1] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[min-height:38px] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[font-size:14px] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:font-bold [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[padding:0_4px]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[width:100%] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[padding:10px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[border-radius:6px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[font-size:14px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[min-height:34px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:items-center [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:justify-center [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[text-decoration:none] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:box-border"])}
-            
-            aria-label={`Pre-Order: ${product.name}`}
-          >
-            Pre-Order
-          </Link>
+          <Link href={`/products/${encodeURIComponent(product.slug)}#preorder`} className={actionClass} aria-label={`Pre-order: ${product.name}`}>+</Link>
         ) : (
-          <button className={utilities("button", [62, "[:where(&).button]:[min-height:39px] [:where(&).button]:inline-flex [:where(&).button]:items-center [:where(&).button]:justify-center [:where(&).button]:[gap:7px] [:where(&).button]:[border-radius:4px] [:where(&).button]:[padding:0_17px] [:where(&).button]:font-bold [:where(&).button]:cursor-pointer [:where(&).button]:[border:1px_solid_transparent]"], [280, "[.cart-summary_:where(&).button]:[width:100%] [.cart-summary_:where(&).button]:[margin-top:12px]"], [286, "[.checkout-form>:where(&).button]:[width:max-content] [.checkout-form>:where(&).button]:[margin-top:6px]"], [492, "[.accessory-card_:where(&).button]:[width:100%] [.accessory-card_:where(&).button]:[margin-top:12px] [.accessory-card_:where(&).button]:[border-radius:6px] [.accessory-card_:where(&).button]:text-ellipsis [.accessory-card_:where(&).button]:overflow-hidden [.accessory-card_:where(&).button]:whitespace-nowrap"], [603, "[:is(:where(&).button)]:[font-size:14px]"], [654, "[:is(.accessory-card_:where(&).button)]:[font-size:10px] [:is(.accessory-card_:where(&).button)]:[padding:0_4px] [:is(.accessory-card_:where(&).button)]:[min-height:30px]"], [683, "[@media_(max-width:_720px)]:[:where(&).button,_:where(&).text-link]:[font-size:12px]"], [809, "[.package-card_footer_:where(&).button]:[font-size:11px] [.package-card_footer_:where(&).button]:[min-height:32px] [.package-card_footer_:where(&).button]:[padding:0_13px]"], [818, "[.maintenance-cta_:where(&).button]:[margin-right:15px]"], [837, "[@media_(max-width:_720px)]:[.maintenance-cta_:where(&).button]:[margin:0_0_12px]"], [1225, "[.combo-modal>footer_:where(&).button]:[min-height:36px]"], [1289, "[@media_(max-width:_720px)]:[.combo-modal>footer_:where(&).button]:[width:100%]"], [2383, "[@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:inline-block [@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:[margin-top:15px]"], [2479, "[.reference-toolbar_:where(&).button]:[height:34px] [.reference-toolbar_:where(&).button]:[padding:0_10px] [.reference-toolbar_:where(&).button]:[font-size:10px]"], [2491, "[.order-actions_:where(&).button]:[font-size:9px] [.order-actions_:where(&).button]:[padding:6px_14px]"], [2542, "[.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[height:34px] [.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[font-size:9px]"], [2579, "[.order-confirmation-actions_:where(&).button]:flex [.order-confirmation-actions_:where(&).button]:items-center [.order-confirmation-actions_:where(&).button]:justify-center [.order-confirmation-actions_:where(&).button]:[gap:7px] [.order-confirmation-actions_:where(&).button]:[min-height:43px] [.order-confirmation-actions_:where(&).button]:[text-decoration:none]"], [2587, "[.invoice-actions_:where(&).button]:flex [.invoice-actions_:where(&).button]:items-center [.invoice-actions_:where(&).button]:justify-center [.invoice-actions_:where(&).button]:[gap:6px]"], [2627, "[@media_(max-width:680px)]:[.invoice-actions_:where(&).button]:[flex:1_1_100%]"], [2653, "[.drawer-edit-actions_:where(&).button]:[height:31px] [.drawer-edit-actions_:where(&).button]:[padding:0_11px] [.drawer-edit-actions_:where(&).button]:[font-size:9px]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[width:100%] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[padding:10px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[border-radius:6px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[font-size:14px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[min-height:34px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:flex [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:items-center [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:justify-center [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:box-border"])}  disabled>
-            Out of Stock
-          </button>
+          <button type="button" className={`${actionClass} cursor-not-allowed opacity-30`} disabled aria-label={`Out of stock: ${product.name}`}>+</button>
         )}
       </div>
+
       {inquiryProduct && (
         <InquiryModal product={{ slug: inquiryProduct.slug, name: inquiryProduct.name, image: inquiryProduct.image }} onClose={() => setInquiryProduct(null)} />
       )}
