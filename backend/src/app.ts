@@ -1,10 +1,12 @@
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express, { type RequestHandler } from "express";
+import mongoose from "mongoose";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { env } from "./config/env.js";
+import { connectDatabase } from "./config/database.js";
 import { errorHandler, notFound } from "./common/middleware/error.middleware.js";
 import { apiRouter } from "./routes/index.js";
 
@@ -96,8 +98,24 @@ app.use("/api/v1/account/avatar", uploadLimiter);
 app.use("/api/v1/admin/media", uploadLimiter);
 app.use("/api/v1/orders/track", trackLimiter);
 
+let databaseConnection: Promise<void> | null = null;
+app.use(async (_request, _response, next) => {
+  if (mongoose.connection.readyState === 1) return next();
+  databaseConnection ??= connectDatabase().catch((error) => {
+    databaseConnection = null;
+    throw error;
+  });
+  try {
+    await databaseConnection;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+});
 
 app.get("/", (_request, response) => response.json({ name: "Drone Bangladesh API", version: "v1" }));
 app.use("/api/v1", apiRouter);
 app.use(notFound);
 app.use(errorHandler);
+
+export default app;
