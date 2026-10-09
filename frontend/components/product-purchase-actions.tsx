@@ -5,7 +5,6 @@ import { utilities, resolveClasses } from "@/lib/tailwind";
 import { useTimedFeedback } from "@/hooks/use-timed-feedback";
 
 import { Minus, Plus, ShoppingCart, X, MapPin, Mail, Phone, UserRound, RotateCcw, Star, Truck } from "lucide-react";
-import ProductGalleryActions from "@/components/product-gallery-actions";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog";
@@ -283,7 +282,6 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
       <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Truck size={18} className="text-red-500" aria-hidden="true" />Free Home Delivery</span>
     </div>
   </div>
-  <ProductGalleryActions product={selectedProduct} />
   {isClothing && <section className={shareStyles.clothingOptions} aria-label="Choose product colour and size">
     <div>
       <div className={shareStyles.optionHeading}><strong>Color: <span>{colorName(selectedProduct)}</span></strong></div>
