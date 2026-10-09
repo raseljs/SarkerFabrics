@@ -4,7 +4,7 @@
 import { utilities, resolveClasses } from "@/lib/tailwind";
 import { useTimedFeedback } from "@/hooks/use-timed-feedback";
 
-import { Minus, Plus, ShoppingCart, X, MapPin, Mail, Phone, UserRound, Ruler, RotateCcw, Truck } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X, MapPin, Mail, Phone, UserRound, RotateCcw, Truck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog";
@@ -252,7 +252,7 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
       </div>
     </div>
     <div>
-      <div className={shareStyles.optionHeading}><strong>Size: <span>{selectedSize}</span></strong><button type="button" className={shareStyles.sizeGuide} onClick={() => document.querySelector('.product-content-tabs')?.scrollIntoView({ behavior: 'smooth' })}><Ruler size={17} aria-hidden="true" /> Size guide</button></div>
+      <div className={shareStyles.optionHeading}><strong>Size: <span>{selectedSize}</span></strong></div>
       <div className={shareStyles.sizeList} role="group" aria-label="Available sizes">
         {availableSizes.map(size => <button key={size} type="button" className={`${shareStyles.sizeOption} ${selectedSize === size ? shareStyles.sizeOptionSelected : ""}`} aria-pressed={selectedSize === size} onClick={() => setSelectedSize(size)}>{size}</button>)}
       </div>
