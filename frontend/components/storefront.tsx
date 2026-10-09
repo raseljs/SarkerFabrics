@@ -946,12 +946,12 @@ export function ProductCard({ product }: { product: ProductData; compact?: boole
       onFocus={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) startImagePreview(); }}
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) stopImagePreview(); }}
     >
-      <Link href={`/products/${product.slug}`} className="relative block aspect-[4/5] w-full overflow-hidden bg-[#f5f5f3]">
+      <Link href={`/products/${product.slug}`} className="relative block aspect-[3/4] w-full overflow-hidden bg-[#f5f5f3] sm:aspect-[4/5]">
         <Image
           src={displayedImage}
           alt={product.name}
           fill
-          className="object-contain p-2 transition-opacity duration-200 sm:p-4"
+          className="scale-[1.12] object-contain p-0 transition-transform duration-300"
           sizes="(max-width: 720px) 50vw, (max-width: 1100px) 33vw, 25vw"
           quality={76}
           unoptimized={displayedImage.startsWith("data:")}
@@ -965,7 +965,7 @@ export function ProductCard({ product }: { product: ProductData; compact?: boole
 
       <div className="flex items-start gap-1.5 pb-5 pt-2 sm:gap-2 sm:pt-2.5">
         <Link href={`/products/${product.slug}`} className="min-w-0 flex-1 text-[#222] no-underline">
-          <h3 className="m-0 truncate text-[11px] font-normal uppercase leading-4 tracking-[0.01em] sm:text-[13px] sm:leading-5">
+          <h3 className="!m-0 truncate !text-[10px] !font-normal uppercase !leading-4 tracking-[0.01em] sm:!text-[12px] sm:!leading-5">
             {product.name}
           </h3>
           <p className="m-0 mt-0.5 text-[12px] font-normal leading-4 text-[#444] sm:text-[14px] sm:leading-5">
