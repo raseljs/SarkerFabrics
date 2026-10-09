@@ -1,0 +1,104 @@
+.card { min-height:0 !important; display:flex !important; flex-direction:column !important; }
+.card > div:first-of-type { display:flex; flex-direction:column; flex:1; }
+.card :global(.accessory-store-image), .card :global(.product-image) {
+  width:100%; height:auto !important; min-height:0 !important; aspect-ratio:1 / 1;
+  display:block; position:relative; flex:none; margin:0 !important;
+}
+.card :global(.accessory-store-image) img { padding:12px !important; }
+.card :global(.product-image) img { width:100%; height:100%; object-fit:contain; padding:12px; }
+.card :global(.accessory-store-info) { padding:10px 12px 0 !important; min-height:0 !important; flex:none !important; }
+.card h3 { font-size:15px !important; line-height:1.35 !important; height:41px !important; min-height:0 !important; margin:0 0 4px !important; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.card :global(.accessory-store-desc), .card :global(.product-meta) { height:auto !important; min-height:0 !important; margin:0 0 6px !important; font-size:13px !important; line-height:1.4 !important; }
+.card :global(.price-row) { display:flex !important; flex-wrap:wrap; align-items:baseline; justify-content:flex-start !important; gap:2px 7px !important; min-height:43px !important; margin:0 !important; padding:0 !important; }
+.card :global(.price) { font-size:18px !important; line-height:1.3 !important; }
+.card :global(.old-price) { font-size:12px !important; line-height:1.3 !important; }
+.card > div:last-of-type:not(:first-of-type) { padding:0 12px 12px !important; margin-top:0 !important; }
+.card :global(.button), .card :global(.inquiry-now-card-btn), .card :global(.add-cart) { min-height:36px !important; height:36px !important; padding:6px 8px !important; font-size:14px !important; margin-top:0 !important; }
+.card:global(.is-compact) > div:first-of-type > a:not(:global(.product-image)),
+.card:global(.is-compact) :global(.product-meta), .card:global(.is-compact) :global(.price-row) { margin-left:10px !important; margin-right:10px !important; }
+.share { position:absolute; z-index:5; top:57px; right:10px; width:36px; height:36px; display:grid; place-items:center; padding:0; border:1px solid #e0e6ef; border-radius:50%; background:white; color:#203956; cursor:pointer; box-shadow:0 2px 8px #102b4d15; }
+.share:hover { color:#e51e2a; border-color:#e51e2a; }
+.share:focus-visible { outline:3px solid #247ce0; outline-offset:2px; }
+.share:disabled { opacity:.6; }
+.feedback { position:absolute; top:100px; right:8px; left:8px; z-index:8; padding:10px 24px 10px 10px !important; background:white; border:1px solid #dce5ef; box-shadow:0 4px 16px #071d3926; border-radius:7px; font-size:12px; line-height:1.4; }
+.feedback input { width:100%; min-width:0; border:1px solid #dce5ef; padding:5px; margin-top:6px; font-size:11px; }
+.feedback button { position:absolute; top:2px; right:5px; background:none; border:0; font-size:20px; cursor:pointer; }
+.detailHeader { position:relative; }
+.detailShare { top:0; right:0; width:42px; height:42px; border-color:#d8e1ec; box-shadow:0 4px 14px #102b4d1a; }
+.detailFeedback { top:50px; right:0; left:auto; width:min(320px, calc(100vw - 32px)); }
+.clothingOptions { display:grid; gap:14px; padding:14px 0 16px; border-bottom:1px solid #e5eaf0; }
+.optionHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; color:#111827; font-size:14px; }
+.optionHeading strong { font-weight:700; }
+.optionHeading span { font-weight:500; color:#475569; }
+.sizeGuide { display:inline-flex; align-items:center; gap:5px; padding:0; border:0; background:transparent; color:#17253b; font:inherit; font-weight:700; cursor:pointer; }
+.sizeGuide:hover { color:#e51e2a; }
+.colorList { display:flex; gap:9px; overflow-x:auto; padding:2px 2px 3px; scrollbar-width:thin; }
+.colorOption { position:relative; flex:0 0 58px; width:58px; height:65px; padding:3px; overflow:hidden; border:1px solid #d8dee8; border-radius:7px; background:#f8fafc; cursor:pointer; transition:border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+.colorOption img { width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply; }
+.colorOption:hover { border-color:#ef6b73; transform:translateY(-1px); }
+.colorOptionSelected { border:2px solid #ef4a22; box-shadow:0 0 0 2px #fff, 0 0 0 3px #ef4a2240; }
+.colorOptionSelected::after { content:"✓"; position:absolute; top:2px; right:2px; display:grid; place-items:center; width:16px; height:16px; border-radius:50%; background:#ff5a1f; color:#fff; font-size:10px; font-weight:800; }
+.sizeList { display:flex; flex-wrap:wrap; gap:8px; }
+.sizeOption { min-width:50px; height:38px; padding:0 14px; border:1px solid #cfd6df; border-radius:999px; background:#fff; color:#111827; font-size:14px; font-weight:700; cursor:pointer; transition:all .16s ease; }
+.sizeOption:hover { border-color:#0b1f38; }
+.sizeOptionSelected { border-color:#0b1f38; background:#0b1f38; color:#fff; box-shadow:0 2px 7px #0b1f3826; }
+.sizeMeasurement { padding:14px 0; border-bottom:1px solid #e5eaf0; }
+.sizeMeasurement h3 { margin:0 0 10px; color:#111827; font-size:15px; }
+.sizeMeasurement > p { margin:0; color:#64748b; font-size:13px; }
+.sizeMeasurementContent { color:#45546c; font-size:13px; line-height:1.55; overflow-x:auto; }
+.sizeMeasurementContent :first-child { margin-top:0; }
+.sizeMeasurementContent :last-child { margin-bottom:0; }
+.sizeMeasurementContent table { width:100%; min-width:360px; border-collapse:collapse; background:#fff; }
+.sizeMeasurementContent th, .sizeMeasurementContent td { padding:9px 10px; border:1px solid #dfe5ec; text-align:center; }
+.sizeMeasurementContent th { background:#f4f7fb; color:#17253b; font-weight:700; }
+.sizeMeasurementContent ul, .sizeMeasurementContent ol { padding-left:20px; }
+.newArrivalBadge {
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:4px !important;
+  padding:6px 10px !important;
+  border-radius:999px !important;
+  background:#202020 !important;
+  color:#fff !important;
+  font-size:12px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+  letter-spacing:0 !important;
+  text-transform:none !important;
+  white-space:nowrap;
+  box-shadow:0 2px 5px rgba(0,0,0,.12);
+}
+.newArrivalBadge svg { width:13px; height:13px; stroke-width:2.4; flex:none; }
+@media(max-width:720px) {
+  .card h3 { font-size:14px !important; height:38px !important; }
+  .card :global(.accessory-store-info) { padding:8px 9px 0 !important; }
+  .card > div:last-of-type:not(:first-of-type) { padding:0 9px 9px !important; }
+  .card :global(.price) { font-size:16px !important; }
+  .card :global(.button), .card :global(.add-cart) { font-size:12px !important; }
+  .newArrivalBadge { gap:3px !important; padding:5px 8px !important; font-size:11px !important; }
+  .newArrivalBadge svg { width:11px; height:11px; }
+  .detailShare { width:38px; height:38px; }
+  .detailFeedback { top:44px; }
+  .clothingOptions { gap:12px; padding:12px 0 14px; }
+  .optionHeading { font-size:13px; }
+  .colorOption { flex-basis:54px; width:54px; height:61px; }
+  .sizeList { gap:7px; }
+  .sizeOption { min-width:45px; height:35px; padding:0 12px; font-size:13px; }
+  :global(.purchase-panel):has(.clothingOptions) { display:flex !important; flex-direction:column; }
+  :global(.purchase-panel):has(.clothingOptions) .detailHeader { order:1; }
+  :global(.purchase-panel):has(.clothingOptions) :global(.purchase-actions) {
+    position:static !important;
+    inset:auto !important;
+    order:2;
+    margin:14px 0 4px !important;
+    padding:9px 0 !important;
+    border-top:1px solid #e4e9f0 !important;
+    border-bottom:1px solid #e4e9f0;
+    background:#fff;
+    box-shadow:none !important;
+  }
+  :global(.purchase-panel):has(.clothingOptions) .sizeMeasurement { order:3; padding-top:10px; }
+  :global(.purchase-panel):has(.clothingOptions) :global(.view-more-info) { order:4; align-self:flex-start; }
+  :global(.purchase-panel):has(.clothingOptions) :global(.product-variant-selector),
+  :global(.purchase-panel):has(.clothingOptions) :global(.selected-variant-summary) { order:5; }
+}

@@ -1,0 +1,14 @@
+
+import { utilities } from "@/lib/tailwind";
+import { Suspense } from "react";
+import AdminAccessories from "@/components/admin-accessories";
+
+export default function AdminAccessoriesPage() { 
+  return (
+    <main className={utilities("admin-page page-container", [15, "[:where(&).page-container]:[width:min(1240px,_calc(100%_-_24px))] [:where(&).page-container]:[margin-inline:auto]"], [16, "[@media_(min-width:_768px)]:[:where(&).page-container]:[width:min(1240px,_calc(100%_-_48px))]"], [291, "[:where(&).admin-page]:[padding-top:45px] [:where(&).admin-page]:[padding-bottom:60px]"], [333, "[.catalog-hero_:where(&).page-container]:relative [.catalog-hero_:where(&).page-container]:[z-index:1]"], [501, "[@media_(max-width:_720px)]:[:where(&).page-container]:[width:min(100%_-_28px,_620px)]"], [1408, "[.admin-route-content>:where(&).admin-page]:[width:100%] [.admin-route-content>:where(&).admin-page]:[margin:0] [.admin-route-content>:where(&).admin-page]:[padding:0]"])}>
+      <Suspense fallback={<div className={utilities("admin-auth-loading", [1401, "[:where(&).admin-auth-loading]:fixed [:where(&).admin-auth-loading]:[inset:0] [:where(&).admin-auth-loading]:[z-index:99999] [:where(&).admin-auth-loading]:[background:#0d1421] [:where(&).admin-auth-loading]:flex [:where(&).admin-auth-loading]:flex-col [:where(&).admin-auth-loading]:items-center [:where(&).admin-auth-loading]:justify-center [:where(&).admin-auth-loading]:[gap:18px] [:where(&).admin-auth-loading]:[color:#7a8fa8] [:where(&).admin-auth-loading]:[font-size:13.5px] [:where(&).admin-auth-loading]:font-medium"], [1402, "[:where(&).admin-auth-loading_p]:[margin:0] [:where(&).admin-auth-loading_p]:[color:#7a8fa8] [:where(&).admin-auth-loading_p]:[font-size:13.5px]"])}>Loading accessories…</div>}>
+        <AdminAccessories />
+      </Suspense>
+    </main>
+  ); 
+}

@@ -1,0 +1,25 @@
+.serviceRow :global(.reassure-icon){width:60px;height:60px;flex:0 0 60px}
+.serviceRow :global(.reassure-icon) svg{width:30px;height:30px}
+.footer :global(.socials) a{width:34px;height:34px;font-size:18px}
+.footer :global(.socials) svg{width:20px;height:20px}
+.footer :global(.footer-description) a{color:#dce9ff;text-decoration:underline;text-underline-offset:3px}
+.footer :global(.footer-address) a{overflow-wrap:anywhere;line-height:1.6}
+.footer :global(.footer-address) a[href^="tel:"]{display:flex;align-items:center;gap:8px}
+@media(max-width:720px){.serviceRow :global(.reassure-icon){width:52px;height:52px;flex-basis:52px}.serviceRow :global(.reassure-icon) svg{width:27px;height:27px}}
+
+.footer :global(.footer-description),
+.footer :global(.footer-col) > a { font-size:16px; line-height:1.7; }
+.footer :global(.footer-col) h3 { font-size:15px; line-height:1.5; }
+.footer :global(.footer-bottom),
+.footer :global(.footer-bottom) > span,
+.footer :global(.footer-bottom) > a,
+.footer :global(.payments) > span:first-child { font-size:14px; line-height:1.6; }
+.footer :global(.footer-grid) > div { min-width:0; }
+.footer :global(.footer-address) a { overflow-wrap:anywhere; }
+@media(max-width:720px) {
+  .footer :global(.footer-description), .footer :global(.footer-col) > a { font-size:15px; }
+  .footer :global(.footer-bottom), .footer :global(.footer-bottom) > span,
+  .footer :global(.footer-bottom) > a, .footer :global(.payments) > span:first-child { font-size:13px; }
+}
+
+.footer :global(.footer-address) a[href^="tel:"] { font-weight:700; }

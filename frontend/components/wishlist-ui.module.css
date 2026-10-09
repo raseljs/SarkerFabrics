@@ -1,0 +1,6 @@
+.card { position:relative; }
+.button { position:absolute; z-index:4; top:10px; right:10px; display:grid; place-items:center; width:40px; height:40px; padding:0; border:1px solid #e0e6ef; border-radius:50%; background:#fff; color:#203956; box-shadow:0 2px 8px #102b4d15; cursor:pointer; }
+.button:hover { color:#e7262d; border-color:#e7262d; }
+.button[aria-pressed=true] { background:#fff1f3; color:#e7262d; border-color:#ffc7d0; }
+.button:focus-visible { outline:3px solid #247ce0; outline-offset:2px; }
+.button:disabled { opacity:.6; cursor:wait; }

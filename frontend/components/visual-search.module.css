@@ -1,0 +1,39 @@
+.trigger { display:inline-flex!important; align-items:center!important; justify-content:center!important; flex:0 0 44px!important; width:44px!important; min-height:40px!important; padding:0!important; background:white!important; color:#102b4d!important; border:0!important; border-radius:0!important; cursor:pointer; }
+.trigger:hover { background:#eef5ff!important; }
+.trigger:focus-visible,.content button:focus-visible,.content a:focus-visible { outline:3px solid #1681ef; outline-offset:2px; }
+.dialog { margin:auto; padding:0; border:1px solid #dce5f1; border-radius:20px; width:min(760px,calc(100vw - 24px)); max-height:90dvh; color:#142d4e; background:white; box-shadow:0 24px 90px #09244740; overflow:auto; }
+.dialog::backdrop { background:#091c36a6; }
+.content { padding:24px; font:16px/1.5 Arial,sans-serif; }
+.header,.sectionHead { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.header h2 { margin:0; font-size:24px; font-weight:700; }
+.header p,.query p { margin:4px 0; color:#5f718a; font-size:14px; }
+.icon { border:0; background:#f2f6fa; color:#243958; width:44px; height:44px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; cursor:pointer; }
+.privacy { display:flex; gap:8px; align-items:center; padding:12px; color:#16734a; background:#edf9f1; font-size:14px; border-radius:8px; margin:20px 0 8px; }
+.choices>button { display:flex; align-items:center; gap:18px; padding:20px 12px; width:100%; text-align:left; border:0; border-bottom:1px solid #e3eaf2; background:white; color:#142d4e; font-size:20px; font-weight:600; cursor:pointer; }
+.choices>button:hover { background:#f3f7fc; }
+.choices svg { width:28px; height:28px; }
+.choices small { display:block; font-size:14px; font-weight:400; color:#65758c; margin-top:4px; }
+.hint { color:#63738a; font-size:14px; line-height:1.6; padding:12px 0; }
+.footer { display:flex; justify-content:flex-end; border-top:1px solid #e3eaf2; margin-top:18px; padding-top:16px; }
+.secondary { display:inline-flex; justify-content:center; align-items:center; gap:8px; border:1px solid #c8d7e8; border-radius:8px; padding:10px 16px; min-height:44px; background:#fff; color:#194c86; font-size:14px; cursor:pointer; }
+.secondary:hover { background:#edf5ff; }
+.secondary:disabled { opacity:.5; cursor:wait; }
+.query { display:flex; align-items:center; gap:18px; margin:20px 0; }
+.query>img { width:104px; height:104px; object-fit:contain; border:1px solid #e2eaf3; border-radius:12px; background:#f5f8fc; }
+.query h3,.sectionHead h3 { font-size:18px; font-weight:700; margin:0 0 8px; }
+.progress { display:flex; flex-direction:column; align-items:center; text-align:center; padding:32px 12px; gap:12px; }
+.spin { animation:turn 1s linear infinite; color:#126dd2; }
+@keyframes turn { to { transform:rotate(360deg); } }
+.results { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.results a { display:flex; flex-direction:column; border:1px solid #dce5ef; border-radius:12px; padding:12px; gap:8px; text-decoration:none; color:#142d4e; }
+.results a:hover { border-color:#267eda; box-shadow:0 4px 15px #14375815; }
+.results img { width:100%; height:145px; object-fit:contain; }
+.results h4 { font-size:15px; font-weight:600; line-height:1.4; margin:0; }
+.results strong { margin-top:auto; font-size:17px; }
+.results span { color:#1b65bb; font-size:13px; }
+.history { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:18px 0; }
+.history button { border:1px solid #dce5ef; background:white; border-radius:10px; padding:8px; cursor:pointer; color:#456080; }
+.history img { width:100%; height:110px; object-fit:contain; }
+.error { background:#fff1f2; color:#a22434; padding:14px; border-radius:8px; font-size:14px; }
+@media(max-width:600px) { .dialog { margin:auto 0 0; width:100%; max-width:100%; max-height:94dvh; border-radius:20px 20px 0 0; } .content { padding:20px 16px; } .results { grid-template-columns:repeat(2,minmax(0,1fr)); } .query { align-items:flex-start; } .sectionHead { flex-wrap:wrap; } .results img { height:120px; } }
+@media(prefers-reduced-motion:reduce) { .spin { animation:none; } }
