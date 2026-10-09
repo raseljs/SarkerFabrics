@@ -306,7 +306,6 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
       ? <div className={shareStyles.sizeMeasurementContent} dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(selectedProduct.sizeMeasurementHtml) }} />
       : <p>Size measurement details will be added soon.</p>}
   </section>
-  <button type="button" className={utilities("view-more-info", [2310, "[:where(&).view-more-info]:[border:0] [:where(&).view-more-info]:[background:none] [:where(&).view-more-info]:[color:#df1d4f] [:where(&).view-more-info]:font-semibold [:where(&).view-more-info]:[font-size:12px] [:where(&).view-more-info]:[padding:8px_0_14px] [:where(&).view-more-info]:cursor-pointer"])} onClick={() => document.querySelector('.product-content-tabs')?.scrollIntoView({ behavior: 'smooth' })}>View More Info →</button>
   
 
   {comboProducts.length > 0 && !isClothing && <section className={utilities("product-variant-selector", [552, "[@media_(max-width:_720px)]:[:where(&).purchase-panel>*:last-child,_.purchase-panel_:where(&).product-variant-selector:last-child,_.purchase-panel_:where(&).people-also-bought-section:last-child]:[margin-bottom:0]"], [2171, "[:where(&).product-variant-selector]:[margin:16px_0_13px]"])} aria-label="Select product variant">
