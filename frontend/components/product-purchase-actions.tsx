@@ -288,7 +288,7 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
       <div className={shareStyles.colorList} role="list" aria-label="Available colours">
         {clothingProducts.map(item => {
           const selected = item.slug === selectedProduct.slug;
-          return <button key={item.slug} type="button" className={`${shareStyles.colorOption} ${selected ? shareStyles.colorOptionSelected : ""}`} aria-label={`${colorName(item)} colour`} aria-pressed={selected} title={colorName(item)} onClick={() => setSelectedVariantSlug(item.slug)}><img src={item.image || item.images?.[0]} alt="" /></button>;
+          return <button key={item.slug} type="button" className={`${shareStyles.colorOption} !h-[92px] !w-[82px] !basis-[82px] max-[640px]:!h-[82px] max-[640px]:!w-[72px] max-[640px]:!basis-[72px] ${selected ? shareStyles.colorOptionSelected : ""}`} aria-label={`${colorName(item)} colour`} aria-pressed={selected} title={colorName(item)} onClick={() => setSelectedVariantSlug(item.slug)}><img src={item.image || item.images?.[0]} alt="" /></button>;
         })}
       </div>
     </div>
