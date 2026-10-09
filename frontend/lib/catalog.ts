@@ -18,6 +18,7 @@ export type CatalogProduct = {
   sizes?: string[];
   sku?: string;
   stock?: number;
+  soldCount?: number;
   preorderEnabled?: boolean;
   preorderDepositPercent?: number;
   preorderNote?: string;

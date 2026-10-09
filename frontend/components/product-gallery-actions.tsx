@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Copy, Download, Heart, Share2 } from "lucide-react";
 import type { CatalogProduct } from "@/lib/catalog";
 import { apiRequest, getApiBase } from "@/lib/api";
-import styles from "./product-gallery-actions.module.css";
 
 const wishlistKey = "drone-bangladesh-wishlist";
 
@@ -82,14 +81,16 @@ export default function ProductGalleryActions({ product }: { product: CatalogPro
 
   const image = product.image || product.images?.[0] || "";
 
-  return <div className={styles.actions} aria-label="Product sharing and wishlist actions">
-    <div className={styles.shareGroup}>
-      <span>Share:</span>
-      <button type="button" onClick={() => void share()} aria-label="Share product" title="Share product"><Share2 size={15} /></button>
-      <button type="button" onClick={() => void copyLink()} aria-label="Copy product link" title="Copy product link"><Copy size={15} /></button>
-      {image && <a href={image} download aria-label="Download product image" title="Download product image"><Download size={15} /></a>}
-      {feedback && <em role="status">{feedback}</em>}
+  const actionClass = "inline-flex size-8 items-center justify-center rounded-full border-0 bg-transparent text-slate-500 transition-colors hover:bg-slate-100 hover:text-red-600";
+
+  return <div className="flex min-h-12 w-full items-center justify-between gap-3 border-b border-slate-200 py-2 text-[12px] text-slate-500" aria-label="Product sharing and wishlist actions">
+    <div className="flex min-w-0 items-center gap-1">
+      <span className="mr-1 text-slate-400">Share:</span>
+      <button className={actionClass} type="button" onClick={() => void share()} aria-label="Share product" title="Share product"><Share2 size={15} /></button>
+      <button className={actionClass} type="button" onClick={() => void copyLink()} aria-label="Copy product link" title="Copy product link"><Copy size={15} /></button>
+      {image && <a className={actionClass} href={image} download aria-label="Download product image" title="Download product image"><Download size={15} /></a>}
+      {feedback && <em className="ml-1 whitespace-nowrap text-[10px] not-italic text-emerald-600" role="status">{feedback}</em>}
     </div>
-    <button type="button" className={`${styles.wishlist} ${saved ? styles.saved : ""}`} aria-label={`${saved ? "Remove from" : "Add to"} wishlist`} aria-pressed={saved} disabled={busy} onClick={() => void toggleWishlist()}><Heart size={16} fill={saved ? "currentColor" : "none"} /><span>{saved ? "Wishlisted" : "Wishlist"}</span></button>
+    <button type="button" className={`inline-flex shrink-0 items-center gap-1.5 border-0 bg-transparent px-0 py-1.5 text-[12px] transition-colors hover:text-red-600 disabled:opacity-60 ${saved ? "text-red-600" : "text-slate-500"}`} aria-label={`${saved ? "Remove from" : "Add to"} wishlist`} aria-pressed={saved} disabled={busy} onClick={() => void toggleWishlist()}><Heart size={16} fill={saved ? "currentColor" : "none"} /><span>{saved ? "Wishlisted" : "Wishlist"}</span></button>
   </div>;
 }

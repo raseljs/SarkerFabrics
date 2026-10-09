@@ -7,7 +7,6 @@ import { notFound } from "next/navigation";
 import ProductPurchaseActions from "@/components/product-purchase-actions";
 import ProductAccessories, { ProductDetailsTabs } from "@/components/product-accessories";
 import ProductGallery from "@/components/product-gallery";
-import ProductGalleryActions from "@/components/product-gallery-actions";
 import ProductBenefits from "@/components/product-benefits";
 import ProductContentTabs from "@/components/product-content-tabs";
 import SeoJsonLd from "@/components/seo-jsonld";
@@ -128,7 +127,6 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
       <div className={utilities("page-container product-detail-layout", [15, "[:where(&).page-container]:[width:min(1240px,_calc(100%_-_24px))] [:where(&).page-container]:[margin-inline:auto]"], [16, "[@media_(min-width:_768px)]:[:where(&).page-container]:[width:min(1240px,_calc(100%_-_48px))]"], [333, "[.catalog-hero_:where(&).page-container]:relative [.catalog-hero_:where(&).page-container]:[z-index:1]"], [401, "[:where(&).product-detail-layout]:grid [:where(&).product-detail-layout]:[padding-top:0] [:where(&).product-detail-layout]:[margin-bottom:150px] [:where(&).product-detail-layout]:[grid-template-rows:auto_auto]"], [501, "[@media_(max-width:_720px)]:[:where(&).page-container]:[width:min(100%_-_28px,_620px)]"], [546, "[@media_(max-width:_720px)]:[:where(&).product-detail-layout]:[grid-template-columns:1fr] [@media_(max-width:_720px)]:[:where(&).product-detail-layout]:flex [@media_(max-width:_720px)]:[:where(&).product-detail-layout]:flex-col [@media_(max-width:_720px)]:[:where(&).product-detail-layout]:[gap:12px] [@media_(max-width:_720px)]:[:where(&).product-detail-layout]:[margin-bottom:80px]"], [2138, "[:is(:where(&).product-detail-layout)]:[grid-template-columns:minmax(0,_1fr)_minmax(0,_1.05fr)] [:is(:where(&).product-detail-layout)]:[gap:22px] [:is(:where(&).product-detail-layout)]:[align-items:start]"], [2198, "[@media_(max-width:1050px)]:[:where(&).product-detail-layout]:[grid-template-columns:minmax(320px,_42%)_1fr] [@media_(max-width:1050px)]:[:where(&).product-detail-layout]:[gap:25px]"], [2203, "[@media_(max-width:850px)]:[:where(&).product-detail-layout]:[grid-template-columns:1fr] [@media_(max-width:850px)]:[:where(&).product-detail-layout]:flex [@media_(max-width:850px)]:[:where(&).product-detail-layout]:flex-col [@media_(max-width:850px)]:[:where(&).product-detail-layout]:[gap:12px]"], [2206, "[@media_(max-width:850px)]:[:where(&).product-detail-layout>div:first-child]:[width:100%] [@media_(max-width:850px)]:[:where(&).product-detail-layout>div:first-child]:[min-width:0]"], [2240, "[@media_(max-width:640px)]:[:where(&).product-detail-layout]:flex [@media_(max-width:640px)]:[:where(&).product-detail-layout]:flex-col [@media_(max-width:640px)]:[:where(&).product-detail-layout]:[margin-bottom:35px]"])}>
         <div>
           <ProductGallery images={gallery} name={selectedProduct.name} galleryVideos={selectedProduct.galleryVideos} />
-          <ProductGalleryActions product={selectedProduct} />
           <ProductBenefits variant="desktop" />
         </div>
 

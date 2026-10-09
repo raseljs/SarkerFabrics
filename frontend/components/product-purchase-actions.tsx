@@ -4,7 +4,8 @@
 import { utilities, resolveClasses } from "@/lib/tailwind";
 import { useTimedFeedback } from "@/hooks/use-timed-feedback";
 
-import { Minus, Plus, ShoppingCart, X, MapPin, Mail, Phone, UserRound, RotateCcw, Truck } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X, MapPin, Mail, Phone, UserRound, RotateCcw, Star, Truck } from "lucide-react";
+import ProductGalleryActions from "@/components/product-gallery-actions";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog";
@@ -92,6 +93,7 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
   const [selectedVariantSlug, setSelectedVariantSlug] = useState(product.slug);
   const [selectedSize, setSelectedSize] = useState("M");
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState({ average: 0, count: 0 });
   const selectedProduct = [product, ...comboProducts].find(item => item.slug === selectedVariantSlug) || product;
   const isEnterprise = !!(product.isEnterpriseAgriculture
     || (product as any).menu === "enterprise"
@@ -102,6 +104,23 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#preorder" && Number(selectedProduct.stock || 0) <= 0 && selectedProduct.preorderEnabled !== false) setPreorderOpen(true);
   }, [selectedProduct.slug, selectedProduct.stock, selectedProduct.preorderEnabled]);
+
+  useEffect(() => {
+    let active = true;
+    setReviewSummary({ average: 0, count: 0 });
+    if (!getApiBase()) return () => { active = false; };
+    void apiRequest<{ data?: Array<{ rating?: number }> }>(`/reviews/${encodeURIComponent(selectedProduct.slug)}`)
+      .then((response) => {
+        if (!active) return;
+        const ratings = (response.data || [])
+          .map((review) => Number(review.rating || 0))
+          .filter((rating) => Number.isFinite(rating) && rating >= 1 && rating <= 5);
+        const average = ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : 0;
+        setReviewSummary({ average, count: ratings.length });
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [selectedProduct.slug]);
 
   async function saveToCart(isBuyNow = false) {
     const selectedAccs = allAccessories.filter(a => selectedAccessoryIds.includes(a.id));
@@ -233,7 +252,28 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
   return <>
   <div className={shareStyles.detailHeader}>
   <div className={utilities("product-tags", [424, "[:where(&).product-tags]:flex [:where(&).product-tags]:[gap:8px] [:where(&).product-tags]:flex-wrap"], [425, "[:where(&).product-tags_span]:[background:#f2f5f8] [:where(&).product-tags_span]:[border-radius:4px] [:where(&).product-tags_span]:[color:#53627b] [:where(&).product-tags_span]:[padding:6px_9px]"], [641, "[:is(:where(&).product-tags_span)]:[font-size:11px]"], [2311, "[:is(:is(:where(&).product-tags_span))]:normal-case"])}>{selectedProduct.sku && <span>Product Code: {selectedProduct.sku}</span>}<span className={tw(Number(selectedProduct.stock||0)>0?"in-stock":"")}>{Number(selectedProduct.stock||0)>0?`In Stock: ${selectedProduct.stock} Items`:selectedProduct.preorderEnabled !== false ? "Out of Stock · Pre-Order Open" : "Out of Stock"}</span></div>
-  <h1>{selectedProduct.name}</h1>
+  <div className="flex items-start justify-between gap-4 max-[640px]:flex-col max-[640px]:gap-1">
+    <h1 className="min-w-0 flex-1">{selectedProduct.name}</h1>
+    <div className="mt-4 flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 max-[640px]:mt-0 max-[640px]:justify-start">
+      <span className="whitespace-nowrap text-[12px] font-medium text-slate-600">
+        {Number(selectedProduct.soldCount || 0).toLocaleString("en-BD")} sold
+      </span>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-slate-900"
+        aria-label={`${reviewSummary.average.toFixed(1)} out of 5 from ${reviewSummary.count} reviews`}
+        onClick={() => document.querySelector('.product-content-tabs')?.scrollIntoView({ behavior: 'smooth' })}
+      >
+        <strong className="text-[14px] font-semibold">{reviewSummary.average.toFixed(1)}</strong>
+        <span className="inline-flex items-center gap-0.5" aria-hidden="true">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star key={star} size={16} strokeWidth={1.8} className={star <= Math.round(reviewSummary.average) ? "fill-slate-900 text-slate-900" : "text-slate-400"} />
+          ))}
+        </span>
+        <span className="ml-1 text-[11px] text-slate-500">({reviewSummary.count})</span>
+      </button>
+    </div>
+  </div>
   <div className={utilities("detail-price flex-wrap", [428, "[:where(&).detail-price]:flex [:where(&).detail-price]:[gap:11px] [:where(&).detail-price]:items-center [:where(&).detail-price]:[border-bottom:1px_solid_var(--line)] [:where(&).detail-price]:[padding-bottom:8px]"], [429, "[:where(&).detail-price_strong]:[color:var(--red)]"], [695, "[@media_(max-width:_720px)]:[:where(&).detail-price_strong]:[font-size:25px]"], [2186, "[:is(:where(&).detail-price_strong)]:[font-size:32px]"], [2208, "[@media_(max-width:850px)]:[:where(&).detail-price_strong]:[font-size:26px]"])}>
     <strong>৳{Number(selectedProduct.price || 0).toLocaleString("en-BD")}</strong>
     <div className="ml-auto flex flex-wrap items-center justify-end gap-x-5 gap-y-2 text-[12px] font-semibold text-slate-700 max-[640px]:w-full max-[640px]:justify-start max-[640px]:gap-x-4">
@@ -241,6 +281,7 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
       <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Truck size={18} className="text-red-500" aria-hidden="true" />Free Home Delivery</span>
     </div>
   </div>
+  <ProductGalleryActions product={selectedProduct} />
   {isClothing && <section className={shareStyles.clothingOptions} aria-label="Choose product colour and size">
     <div>
       <div className={shareStyles.optionHeading}><strong>Color: <span>{colorName(selectedProduct)}</span></strong></div>

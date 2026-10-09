@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { Product } from "./product.model.js";
 import { Accessory } from "../accessories/accessory.model.js";
 import { ComboMapping } from "../combo/combo-mapping.model.js";
+import { Order } from "../orders/order.model.js";
 import { env } from "../../config/env.js";
 import { presentPublicAccessory, presentPublicProduct, publicProductFields } from "../../common/utils/public-catalog.js";
 
@@ -225,13 +226,22 @@ productRouter.get("/:slug", async (request, response, next) => {
     if (mongoose.connection.readyState !== 1) {
       const demo = env.enableDemoData ? demoProducts.find((item) => item.slug === request.params.slug) : undefined;
       if (!demo) return response.status(404).json({ success: false, message: "Product not found" });
-      return response.json({ success: true, data: presentProduct(demo) });
+      return response.json({ success: true, data: { ...presentProduct(demo), soldCount: 0 } });
     }
     const product = await Product.findOne({ slug: request.params.slug, isActive: true, $or: [{ status: "published" }, { status: { $exists: false } }] }).lean();
     if (!product) return response.status(404).json({ success: false, message: "Product not found" });
-    const accessories = await Accessory.find({ linkedProductSlug: product.slug, isActive: true, status: "published" }).select("name slug image images brand sku stock price oldPrice description descriptionHtml descriptionCss keyFeatures specifications faqs category subcategory categories subcategories variants linkedProductSlug status sortOrder createdAt updatedAt").sort({ sortOrder: 1 }).lean();
+    const [accessories, soldSummary] = await Promise.all([
+      Accessory.find({ linkedProductSlug: product.slug, isActive: true, status: "published" }).select("name slug image images brand sku stock price oldPrice description descriptionHtml descriptionCss keyFeatures specifications faqs category subcategory categories subcategories variants linkedProductSlug status sortOrder createdAt updatedAt").sort({ sortOrder: 1 }).lean(),
+      Order.aggregate<{ totalSold: number }>([
+        { $match: { deliveryStatus: { $ne: "cancelled" } } },
+        { $unwind: "$items" },
+        { $match: { "items.slug": product.slug } },
+        { $group: { _id: null, totalSold: { $sum: "$items.quantity" } } },
+      ]),
+    ]);
     const payload = presentProduct(product as Record<string, unknown>);
     (payload as any).accessories = accessories.map((item) => presentPublicAccessory(item as any));
+    (payload as any).soldCount = Number(soldSummary[0]?.totalSold || 0);
     response.json({ success: true, data: payload });
   } catch (error) { next(error); }
 });
