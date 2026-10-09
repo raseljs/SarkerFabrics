@@ -4,7 +4,7 @@
 import { utilities, resolveClasses } from "@/lib/tailwind";
 import { useTimedFeedback } from "@/hooks/use-timed-feedback";
 
-import { Minus, Plus, ShoppingCart, X, MapPin, Mail, Phone, UserRound, Ruler } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X, MapPin, Mail, Phone, UserRound, Ruler, RotateCcw, Truck } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog";
@@ -234,7 +234,13 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
   <div className={shareStyles.detailHeader}>
   <div className={utilities("product-tags", [424, "[:where(&).product-tags]:flex [:where(&).product-tags]:[gap:8px] [:where(&).product-tags]:flex-wrap"], [425, "[:where(&).product-tags_span]:[background:#f2f5f8] [:where(&).product-tags_span]:[border-radius:4px] [:where(&).product-tags_span]:[color:#53627b] [:where(&).product-tags_span]:[padding:6px_9px]"], [641, "[:is(:where(&).product-tags_span)]:[font-size:11px]"], [2311, "[:is(:is(:where(&).product-tags_span))]:normal-case"])}>{selectedProduct.sku && <span>Product Code: {selectedProduct.sku}</span>}<span className={tw(Number(selectedProduct.stock||0)>0?"in-stock":"")}>{Number(selectedProduct.stock||0)>0?`In Stock: ${selectedProduct.stock} Items`:selectedProduct.preorderEnabled !== false ? "Out of Stock · Pre-Order Open" : "Out of Stock"}</span></div>
   <h1>{selectedProduct.name}</h1>
-  <div className={utilities("detail-price", [428, "[:where(&).detail-price]:flex [:where(&).detail-price]:[gap:11px] [:where(&).detail-price]:items-center [:where(&).detail-price]:[border-bottom:1px_solid_var(--line)] [:where(&).detail-price]:[padding-bottom:8px]"], [429, "[:where(&).detail-price_strong]:[color:var(--red)]"], [695, "[@media_(max-width:_720px)]:[:where(&).detail-price_strong]:[font-size:25px]"], [2186, "[:is(:where(&).detail-price_strong)]:[font-size:32px]"], [2208, "[@media_(max-width:850px)]:[:where(&).detail-price_strong]:[font-size:26px]"])}><strong>৳{Number(selectedProduct.price || 0).toLocaleString("en-BD")}</strong></div>
+  <div className={utilities("detail-price flex-wrap", [428, "[:where(&).detail-price]:flex [:where(&).detail-price]:[gap:11px] [:where(&).detail-price]:items-center [:where(&).detail-price]:[border-bottom:1px_solid_var(--line)] [:where(&).detail-price]:[padding-bottom:8px]"], [429, "[:where(&).detail-price_strong]:[color:var(--red)]"], [695, "[@media_(max-width:_720px)]:[:where(&).detail-price_strong]:[font-size:25px]"], [2186, "[:is(:where(&).detail-price_strong)]:[font-size:32px]"], [2208, "[@media_(max-width:850px)]:[:where(&).detail-price_strong]:[font-size:26px]"])}>
+    <strong>৳{Number(selectedProduct.price || 0).toLocaleString("en-BD")}</strong>
+    <div className="ml-auto flex flex-wrap items-center justify-end gap-x-5 gap-y-2 text-[12px] font-semibold text-slate-700 max-[640px]:w-full max-[640px]:justify-start max-[640px]:gap-x-4">
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><RotateCcw size={17} className="text-orange-500" aria-hidden="true" />7 Day Replacement</span>
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Truck size={18} className="text-red-500" aria-hidden="true" />Free Home Delivery</span>
+    </div>
+  </div>
   {isClothing && <section className={shareStyles.clothingOptions} aria-label="Choose product colour and size">
     <div>
       <div className={shareStyles.optionHeading}><strong>Color: <span>{colorName(selectedProduct)}</span></strong></div>
