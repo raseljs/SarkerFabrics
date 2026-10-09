@@ -55,7 +55,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         basePath={`/categories/${slug}`}
         searchParams={sp}
         title={title}
-        description={`Products in ${title} from Drone Bangladesh.`}
+        description={`Products in ${title} from Sarker Fabrics.`}
         result={result}
         bannerImage={bannerImage}
       />

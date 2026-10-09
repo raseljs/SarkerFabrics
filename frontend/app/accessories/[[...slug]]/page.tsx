@@ -6,8 +6,8 @@ import SeoJsonLd from "@/components/seo-jsonld";
 import { buildMetadata, absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Accessories | Drone Bangladesh",
-  description: "Official accessories for DJI drones, cameras, and gimbals. Shop batteries, propellers, bags, and more at Drone Bangladesh.",
+  title: "Accessories | Sarker Fabrics",
+  description: "Shop clothing accessories and complementary products from Sarker Fabrics with delivery across Bangladesh.",
   path: "/accessories",
 });
 

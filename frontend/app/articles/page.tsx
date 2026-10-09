@@ -7,10 +7,10 @@ import { getContentEntries } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title:"Drone Guides, Reviews & Articles",
-  description:"Read Drone Bangladesh buying guides, DJI comparisons, aerial photography tips, enterprise drone articles and product support content.",
+  title:"Clothing Guides, Reviews & Articles",
+  description:"Read Sarker Fabrics clothing guides, styling tips, product reviews and care information.",
   path:"/articles",
-  keywords:["drone articles Bangladesh","DJI buying guide","aerial photography","Drone Bangladesh blog"],
+  keywords:["clothing articles Bangladesh","T shirt buying guide","fashion tips","Sarker Fabrics blog"],
 });
 
 const fallback=[

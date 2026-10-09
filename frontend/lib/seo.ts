@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "Sarker Fabrics";
 export const SITE_DESCRIPTION = "Shop Women T shirts, Men T shirts and Hoodies from Sarker Fabrics with Cash on Delivery across Bangladesh.";
-export const FACEBOOK_URL = "https://web.facebook.com/dronebangladesh?";
-export const YOUTUBE_URL = "https://www.youtube.com/@dronebangladesh9726";
-export const DEFAULT_OG_IMAGE = "/images/hero-drone.jpg";
+export const DEFAULT_OG_IMAGE = "/images/categories/women-t-shirt.png";
 
 export function siteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  return (process.env.NEXT_PUBLIC_SITE_URL || "https://sarker-fabrics.vercel.app").replace(/\/$/, "");
 }
 
 export function absoluteUrl(path = "/") {

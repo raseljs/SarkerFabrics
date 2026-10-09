@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import SiteShell from "@/components/site-shell";
 import SeoJsonLd from "@/components/seo-jsonld";
-import { DEFAULT_OG_IMAGE, FACEBOOK_URL, SITE_DESCRIPTION, SITE_NAME, YOUTUBE_URL, absoluteUrl, siteUrl } from "@/lib/seo";
+import { DEFAULT_OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, absoluteUrl, siteUrl } from "@/lib/seo";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   category: "E-commerce",
   creator: SITE_NAME,
   publisher: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: siteUrl() }],
   icons: {
     icon: "/sarker-fabrics-icon-transparent.png?v=20261009-3",
     shortcut: "/sarker-fabrics-icon-transparent.png?v=20261009-3",
@@ -46,7 +47,6 @@ const organization = {
   url: siteUrl(),
   logo: absoluteUrl("/images/logo/sarker-fabrics.svg"),
   image: absoluteUrl(DEFAULT_OG_IMAGE),
-  sameAs: [FACEBOOK_URL, YOUTUBE_URL],
   contactPoint: [{
     "@type": "ContactPoint",
     telephone: "+8801896123434",
@@ -64,7 +64,7 @@ const localBusiness = {
   url: siteUrl(),
   image: absoluteUrl(DEFAULT_OG_IMAGE),
   telephone: "+8801896123434",
-  email: "dronebangladesh567@gmail.com",
+  email: "sarkerfabrics.official@gmail.com",
   priceRange: "৳৳",
   currenciesAccepted: "BDT",
   paymentAccepted: "Cash on Delivery, Card, Mobile Financial Service",
@@ -77,7 +77,6 @@ const localBusiness = {
   },
   areaServed: { "@type": "Country", name: "Bangladesh" },
   parentOrganization: { "@id": `${siteUrl()}/#organization` },
-  sameAs: [FACEBOOK_URL, YOUTUBE_URL],
 };
 
 const webSite = {
@@ -118,7 +117,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html className={utilities("tailwind-root [--navy:#071d39] [--navy-2:#0b294e] [--red:#e51e2a] [--ink:#0b1730] [--muted:#6d7890] [--line:#e6eaf0] [--soft:#f5f8fc] [--radius:14px]", [1, "[:where(&),_:where(&)_*]:box-border"], [2, "[:where(&):is(html)]:[scroll-behavior:smooth] [:where(&):is(html)]:overflow-x-hidden"], [3, "[@media_(prefers-reduced-motion:_reduce)]:[:where(&):is(html)]:[scroll-behavior:auto]"], [4, "[@media_(prefers-reduced-motion:_reduce)]:[:where(&),_:where(&)_*,_:where(&)::before,_:where(&)_*::before,_:where(&)::after,_:where(&)_*::after]:[animation-duration:.01ms]! [@media_(prefers-reduced-motion:_reduce)]:[:where(&),_:where(&)_*,_:where(&)::before,_:where(&)_*::before,_:where(&)::after,_:where(&)_*::after]:[animation-iteration-count:1]! [@media_(prefers-reduced-motion:_reduce)]:[:where(&),_:where(&)_*,_:where(&)::before,_:where(&)_*::before,_:where(&)::after,_:where(&)_*::after]:[transition-duration:.01ms]!"], [5, "[:where(&)_body]:overflow-x-clip"], [6, "[:is(:where(&)_body)]:[margin:0] [:is(:where(&)_body)]:[background:#fff] [:is(:where(&)_body)]:[color:var(--ink)]"], [9, "[:where(&)_body:not(.main-header_*)]:[font-size:clamp(16px,_1vw_+_12px,_18px)] [:where(&)_body:not(.main-header_*)]:[line-height:1.6]"], [10, "[:where(&)_h1:not(.main-header_*)]:[font-size:clamp(28px,_4vw_+_1rem,_42px)] [:where(&)_h1:not(.main-header_*)]:font-bold [:where(&)_h1:not(.main-header_*)]:[line-height:1.2] [:where(&)_h1:not(.main-header_*)]:[letter-spacing:-0.02em]"], [11, "[:where(&)_h2:not(.main-header_*)]:[font-size:clamp(24px,_3vw_+_1rem,_32px)] [:where(&)_h2:not(.main-header_*)]:font-bold [:where(&)_h2:not(.main-header_*)]:[line-height:1.3] [:where(&)_h2:not(.main-header_*)]:[letter-spacing:-0.01em]"], [12, "[:where(&)_h3:not(.main-header_*)]:[font-size:clamp(20px,_2vw_+_1rem,_24px)] [:where(&)_h3:not(.main-header_*)]:font-semibold [:where(&)_h3:not(.main-header_*)]:[line-height:1.4]"], [13, "[:where(&)_a]:[color:inherit] [:where(&)_a]:[text-decoration:none]"], [14, "[:where(&)_button,_:where(&)_input,_:where(&)_select]:[font:inherit]"], [592, "[:is(:is(:where(&)_body))]:[font-size:15px]"], [677, "[@media_(max-width:_720px)]:[:where(&)_body]:[font-size:14px]"], [2632, "[@media_print]:[:where(&)_body]:[background:#fff]!"])} lang="en-BD" suppressHydrationWarning>
       <body className={tw(`${inter.className} antialiased`)} suppressHydrationWarning>
-        <SeoJsonLd id="drone-bangladesh-global-schema" data={[organization, localBusiness, webSite]} />
+        <SeoJsonLd id="sarker-fabrics-global-schema" data={[organization, localBusiness, webSite]} />
         <SiteShell>{children}</SiteShell>
         <Toaster
           position="top-right"

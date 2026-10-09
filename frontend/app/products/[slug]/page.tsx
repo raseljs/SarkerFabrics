@@ -19,13 +19,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) return { title: "Product not found", robots: { index: false, follow: false } };
-  const description = cleanText(product.shortDescription || product.description || `${product.name} from Drone Bangladesh.`).slice(0, 260);
+  const description = cleanText(product.shortDescription || product.description || `${product.name} from Sarker Fabrics.`).slice(0, 260);
   return buildMetadata({
     title: product.name,
     description,
     path: `/products/${product.slug}`,
     image: product.image,
-    keywords: [product.name, product.brand || "DJI", product.category || "drone", "Drone Bangladesh", "drone price in Bangladesh"],
+    keywords: [product.name, product.brand || "Sarker Fabrics", product.category || "clothing", "Sarker Fabrics", `${product.name} price in Bangladesh`],
   });
 }
 
@@ -90,8 +90,8 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
   const gallery = selectedProduct.images?.length ? selectedProduct.images : [selectedProduct.image];
   const features = selectedProduct.keyFeatures?.length ? selectedProduct.keyFeatures : [selectedProduct.meta || "Official product", selectedProduct.stock && selectedProduct.stock > 0 ? "Available in stock" : "Contact us for availability"];
   const specificationRows = specs(selectedProduct.specifications);
-  const descriptionHtml = normalizeDescriptionInput(selectedProduct.descriptionHtml || selectedProduct.description || selectedProduct.shortDescription || `${selectedProduct.name} is available from Drone Bangladesh.`);
-  const description = cleanText(selectedProduct.shortDescription || selectedProduct.description || descriptionHtml || `${selectedProduct.name} from Drone Bangladesh.`).slice(0, 500);
+  const descriptionHtml = normalizeDescriptionInput(selectedProduct.descriptionHtml || selectedProduct.description || selectedProduct.shortDescription || `${selectedProduct.name} is available from Sarker Fabrics.`);
+  const description = cleanText(selectedProduct.shortDescription || selectedProduct.description || descriptionHtml || `${selectedProduct.name} from Sarker Fabrics.`).slice(0, 500);
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -111,7 +111,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
       price: selectedProduct.price,
       availability: Number(selectedProduct.stock || 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition: "https://schema.org/NewCondition",
-      seller: { "@type": "Organization", name: "Drone Bangladesh", url: absoluteUrl("/") },
+      seller: { "@type": "Organization", name: "Sarker Fabrics", url: absoluteUrl("/") },
     },
   };
   const breadcrumbs = breadcrumbJsonLd([
@@ -144,7 +144,7 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
         </div>
         <div className={utilities("similar-bottom-grid", [2798, "[:where(&).similar-bottom-grid]:grid [:where(&).similar-bottom-grid]:[grid-template-columns:repeat(auto-fill,_minmax(160px,_1fr))] [:where(&).similar-bottom-grid]:[gap:16px]"], [2808, "[@media_(max-width:640px)]:[:where(&).similar-bottom-grid]:[grid-template-columns:repeat(2,_1fr)] [@media_(max-width:640px)]:[:where(&).similar-bottom-grid]:[gap:12px]"])}>
           {similar.map(item=><Link href={`/products/${item.slug}`} className={utilities("similar-bottom-card", [2799, "[:where(&).similar-bottom-card]:flex [:where(&).similar-bottom-card]:flex-col [:where(&).similar-bottom-card]:[text-decoration:none] [:where(&).similar-bottom-card]:[background:#fff] [:where(&).similar-bottom-card]:[border:1px_solid_#e4ecf4] [:where(&).similar-bottom-card]:[border-radius:12px]"], [2800, "[:is(:where(&).similar-bottom-card)]:overflow-hidden [:is(:where(&).similar-bottom-card)]:[transition:box-shadow_.2s,_transform_.2s]"], [2801, "[:where(&).similar-bottom-card:hover]:[box-shadow:0_8px_24px_rgba(8,_30,_60,_.1)] [:where(&).similar-bottom-card:hover]:[transform:translateY(-3px)]"])} key={item.slug}>
-            <div className={utilities("similar-bottom-img", [2802, "[:where(&).similar-bottom-img]:[background:#f5f8fc] [:where(&).similar-bottom-img]:flex [:where(&).similar-bottom-img]:items-center [:where(&).similar-bottom-img]:justify-center [:where(&).similar-bottom-img]:[padding:14px] [:where(&).similar-bottom-img]:[height:130px]"], [2803, "[:where(&).similar-bottom-img_img]:[width:100%] [:where(&).similar-bottom-img_img]:[height:100%] [:where(&).similar-bottom-img_img]:object-contain [:where(&).similar-bottom-img_img]:[mix-blend-mode:multiply]"], [2809, "[@media_(max-width:640px)]:[:where(&).similar-bottom-img]:[height:100px]"])}><img src={item.image} alt={`${item.name} at Drone Bangladesh`} loading="lazy"/></div>
+            <div className={utilities("similar-bottom-img", [2802, "[:where(&).similar-bottom-img]:[background:#f5f8fc] [:where(&).similar-bottom-img]:flex [:where(&).similar-bottom-img]:items-center [:where(&).similar-bottom-img]:justify-center [:where(&).similar-bottom-img]:[padding:14px] [:where(&).similar-bottom-img]:[height:130px]"], [2803, "[:where(&).similar-bottom-img_img]:[width:100%] [:where(&).similar-bottom-img_img]:[height:100%] [:where(&).similar-bottom-img_img]:object-contain [:where(&).similar-bottom-img_img]:[mix-blend-mode:multiply]"], [2809, "[@media_(max-width:640px)]:[:where(&).similar-bottom-img]:[height:100px]"])}><img src={item.image} alt={`${item.name} at Sarker Fabrics`} loading="lazy"/></div>
             <div className={utilities("similar-bottom-info", [2804, "[:where(&).similar-bottom-info]:[padding:12px] [:where(&).similar-bottom-info]:flex [:where(&).similar-bottom-info]:flex-col [:where(&).similar-bottom-info]:[gap:4px] [:where(&).similar-bottom-info]:[flex:1]"], [2805, "[:where(&).similar-bottom-info_strong]:[font-size:12px] [:where(&).similar-bottom-info_strong]:font-bold [:where(&).similar-bottom-info_strong]:[color:#0c1e36] [:where(&).similar-bottom-info_strong]:[line-height:1.35] [:where(&).similar-bottom-info_strong]:[display:-webkit-box] [:where(&).similar-bottom-info_strong]:[-webkit-line-clamp:2] [:where(&).similar-bottom-info_strong]:[-webkit-box-orient:vertical] [:where(&).similar-bottom-info_strong]:overflow-hidden"], [2806, "[:where(&).similar-bottom-info_span]:block [:where(&).similar-bottom-info_span]:[font-size:13px] [:where(&).similar-bottom-info_span]:font-extrabold [:where(&).similar-bottom-info_span]:[color:#ed1c24] [:where(&).similar-bottom-info_span]:[margin-top:4px]"], [2807, "[:where(&).similar-bottom-info_small]:flex [:where(&).similar-bottom-info_small]:items-center [:where(&).similar-bottom-info_small]:[gap:4px] [:where(&).similar-bottom-info_small]:[font-size:10px] [:where(&).similar-bottom-info_small]:[color:#7a8fa6] [:where(&).similar-bottom-info_small]:[margin-top:auto] [:where(&).similar-bottom-info_small]:[padding-top:6px]"])}>
               <strong>{item.name}</strong>
               <span>৳{item.price.toLocaleString("en-BD")}</span>

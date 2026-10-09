@@ -25,8 +25,8 @@ import { breadcrumbJsonLd } from "@/lib/seo";
 export async function generateMetadata(): Promise<Metadata> {
   return cmsStaticMetadata(
     "about-us",
-    "About Drone Bangladesh",
-    "Learn about Drone Bangladesh, our mission, vision, services, drone portfolio and nationwide support for consumer, enterprise and agriculture customers."
+    "About Sarker Fabrics",
+    "Learn about Sarker Fabrics, our clothing collection, quality commitment and nationwide delivery for customers across Bangladesh."
   );
 }
 
