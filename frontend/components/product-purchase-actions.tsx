@@ -5,7 +5,7 @@ import { utilities, resolveClasses } from "@/lib/tailwind";
 import { useTimedFeedback } from "@/hooks/use-timed-feedback";
 
 import { Minus, Plus, ShoppingCart, X, MapPin, Mail, Phone, UserRound, RotateCcw, Star, Truck } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { CatalogProduct } from "@/lib/catalog";
 import type { AccessoryMapping } from "@/lib/accessories";
@@ -13,6 +13,9 @@ import { apiRequest, getApiBase } from "@/lib/api";
 import InquiryModal from "@/components/inquiry-modal";
 import shareStyles from "./product-card-updates.module.css";
 import { sanitizeDescriptionHtml } from "@/lib/rich-description";
+import { productDisplayName } from "@/lib/product-name";
+import { getColourFamilyGallery, getColourProductOptions, getProductGallery, hasProductColourOptions } from "@/lib/product-colour-gallery";
+import { trackFacebookViewContent } from "@/lib/facebook-pixel";
 
 // Component styling is compiled from these local Tailwind utilities.
 const componentUtilities: Record<string, string> = {
@@ -94,10 +97,28 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [reviewSummary, setReviewSummary] = useState({ average: 0, count: 0 });
   const selectedProduct = [product, ...comboProducts].find(item => item.slug === selectedVariantSlug) || product;
+  const familyGallery = useMemo(() => getColourFamilyGallery(product, comboProducts), [product, comboProducts]);
+  const colourOptions = useMemo(() => getColourProductOptions(product, comboProducts), [product, comboProducts]);
+
+  useEffect(() => {
+    const selectColourThumbnail = (event: Event) => {
+      const detail: unknown = (event as CustomEvent).detail;
+      if (!detail || typeof detail !== "object" || Array.isArray(detail)) return;
+      const slug = (detail as Record<string, unknown>).slug;
+      if (typeof slug === "string" && colourOptions.some(option => option.product.slug === slug)) setSelectedVariantSlug(slug);
+    };
+    window.addEventListener("colour-thumbnail-selected", selectColourThumbnail);
+    return () => window.removeEventListener("colour-thumbnail-selected", selectColourThumbnail);
+  }, [colourOptions]);
+  const galleryMedia = useMemo(() => familyGallery.isColourFamily ? familyGallery : getProductGallery(selectedProduct), [familyGallery, selectedProduct]);
   const isEnterprise = !!(product.isEnterpriseAgriculture
     || (product as any).menu === "enterprise"
     || /enterprise|agriculture/i.test(String(product.category || ""))
   );
+
+  useEffect(() => {
+    trackFacebookViewContent(selectedProduct);
+  }, [selectedProduct.slug, selectedProduct.price]);
 
 
   useEffect(() => {
@@ -174,10 +195,11 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
       // Add main product
       const existing = cart.find((item) => item.slug === selectedProduct.slug);
       if (existing) {
+        existing.name = productDisplayName(selectedProduct);
         if (isBuyNow) existing.quantity = quantity;
         else existing.quantity += quantity;
       }
-      else cart.push({ ...selectedProduct, quantity });
+      else cart.push({ ...selectedProduct, name: productDisplayName(selectedProduct), quantity });
       
       // Add accessories
       selectedAccs.forEach(acc => {
@@ -235,18 +257,22 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
 
 
   const isClothing = /t[ -]?shirt|shirt|hoodie|clothing|fashion|dress|top/i.test(`${selectedProduct.category || ""} ${selectedProduct.name}`);
-  const clothingProducts = [product, ...comboProducts];
+  const colorProducts = colourOptions.map(option => option.product);
+  const showColorOptions = hasProductColourOptions(colorProducts);
   const availableSizes = selectedProduct.sizes?.length ? selectedProduct.sizes : ["XS", "S", "M", "L", "XL", "XXL"];
-  const colorName = (item: CatalogProduct) => item.color || item.name.split(/\s+[–—]\s+/).pop() || item.name;
+  const colorName = (item: CatalogProduct) => item.color?.trim() || item.name.split(/\s+[–—]\s+/).pop()?.trim() || item.name;
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('combo-selected', {
       detail: {
-        images: selectedProduct.images?.length ? selectedProduct.images : [selectedProduct.image],
-        galleryVideos: selectedProduct.galleryVideos,
+        images: galleryMedia.images,
+        galleryVideos: galleryMedia.galleryVideos,
+        selectedImage: selectedProduct.images?.[0] || selectedProduct.image,
+        name: selectedProduct.name,
+        product: selectedProduct,
       }
     }));
-  }, [selectedProduct.slug, selectedProduct.images, selectedProduct.image, selectedProduct.galleryVideos]);
+  }, [selectedProduct, galleryMedia]);
 
   return <>
   <div className={shareStyles.detailHeader}>
@@ -282,22 +308,23 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
       <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Truck size={18} className="text-red-500" aria-hidden="true" />Free Home Delivery</span>
     </div>
   </div>
-  {isClothing && <section className={shareStyles.clothingOptions} aria-label="Choose product colour and size">
+  {showColorOptions && <section className={shareStyles.clothingOptions} aria-label={isClothing ? "Choose product colour and size" : "Choose product colour"}>
     <div>
       <div className={shareStyles.optionHeading}><strong>Color: <span>{colorName(selectedProduct)}</span></strong></div>
-      <div className={shareStyles.colorList} role="list" aria-label="Available colours">
-        {clothingProducts.map(item => {
+      <div className={shareStyles.colorList} role="group" aria-label="Available colours">
+        {colourOptions.map(option => {
+          const item = option.product;
           const selected = item.slug === selectedProduct.slug;
-          return <button key={item.slug} type="button" className={`${shareStyles.colorOption} !h-[92px] !w-[82px] !basis-[82px] max-[640px]:!h-[82px] max-[640px]:!w-[72px] max-[640px]:!basis-[72px] ${selected ? shareStyles.colorOptionSelected : ""}`} aria-label={`${colorName(item)} colour`} aria-pressed={selected} title={colorName(item)} onClick={() => setSelectedVariantSlug(item.slug)}><img src={item.image || item.images?.[0]} alt="" /></button>;
+          return <button key={item.slug} type="button" className={`${shareStyles.colorOption} !h-[118px] !w-[82px] !basis-[82px] max-[640px]:!h-[108px] max-[640px]:!w-[72px] max-[640px]:!basis-[72px] ${selected ? shareStyles.colorOptionSelected : ""}`} aria-label={`${colorName(item)} colour`} aria-pressed={selected} title={colorName(item)} onClick={() => setSelectedVariantSlug(item.slug)}><img src={option.image} alt="" /><span className={shareStyles.colorOptionName}>{colorName(item)}</span></button>;
         })}
       </div>
     </div>
-    <div>
+    {isClothing && <div>
       <div className={shareStyles.optionHeading}><strong>Size: <span>{selectedSize}</span></strong></div>
       <div className={shareStyles.sizeList} role="group" aria-label="Available sizes">
         {availableSizes.map(size => <button key={size} type="button" className={`${shareStyles.sizeOption} ${selectedSize === size ? shareStyles.sizeOptionSelected : ""}`} aria-pressed={selectedSize === size} onClick={() => setSelectedSize(size)}>{size}</button>)}
       </div>
-    </div>
+    </div>}
   </section>}
   </div>
   <section className={utilities(shareStyles.sizeMeasurement, "min-[851px]:hidden")} aria-labelledby="size-measurement-mobile-title">
@@ -308,7 +335,7 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
   </section>
   
 
-  {comboProducts.length > 0 && !isClothing && <section className={utilities("product-variant-selector", [552, "[@media_(max-width:_720px)]:[:where(&).purchase-panel>*:last-child,_.purchase-panel_:where(&).product-variant-selector:last-child,_.purchase-panel_:where(&).people-also-bought-section:last-child]:[margin-bottom:0]"], [2171, "[:where(&).product-variant-selector]:[margin:16px_0_13px]"])} aria-label="Select product variant">
+  {comboProducts.length > 0 && !showColorOptions && <section className={utilities("product-variant-selector", [552, "[@media_(max-width:_720px)]:[:where(&).purchase-panel>*:last-child,_.purchase-panel_:where(&).product-variant-selector:last-child,_.purchase-panel_:where(&).people-also-bought-section:last-child]:[margin-bottom:0]"], [2171, "[:where(&).product-variant-selector]:[margin:16px_0_13px]"])} aria-label="Select product variant">
     <div className={utilities("variant-selector-heading", [2172, "[:where(&).variant-selector-heading]:flex [:where(&).variant-selector-heading]:items-baseline [:where(&).variant-selector-heading]:justify-between [:where(&).variant-selector-heading]:[gap:12px] [:where(&).variant-selector-heading]:[margin-bottom:8px]"], [2173, "[:where(&).variant-selector-heading_span]:[color:#64748b] [:where(&).variant-selector-heading_span]:[font-size:clamp(12px,_1vw_+_8px,_14px)] [:where(&).variant-selector-heading_span]:font-extrabold [:where(&).variant-selector-heading_span]:[letter-spacing:.08em]"], [2174, "[:where(&).variant-selector-heading_small]:[color:#7a8fa6] [:where(&).variant-selector-heading_small]:[font-size:clamp(12px,_1vw_+_8px,_14px)]"])}><span>SELECT YOUR COMBO</span></div>
     <div className={utilities("variant-selector-list", [2175, "[:where(&).variant-selector-list]:grid [:where(&).variant-selector-list]:[gap:7px]"])}>
       {comboProducts.map((variant) => {
@@ -321,7 +348,7 @@ export default function ProductPurchaseActions({ product, comboProducts = [], al
       })}
     </div>
   </section>}
-  {selectedProduct.slug !== product.slug && <div className={utilities("selected-variant-summary", [2183, "[:where(&).selected-variant-summary]:grid [:where(&).selected-variant-summary]:[grid-template-columns:auto_minmax(0,_1fr)_auto] [:where(&).selected-variant-summary]:items-center [:where(&).selected-variant-summary]:[gap:8px] [:where(&).selected-variant-summary]:[margin:8px_0_0] [:where(&).selected-variant-summary]:[padding:8px_10px] [:where(&).selected-variant-summary]:[border-radius:6px] [:where(&).selected-variant-summary]:[background:#eef7ff] [:where(&).selected-variant-summary]:[color:#1e5e97] [:where(&).selected-variant-summary]:[font-size:10px]"], [2184, "[:where(&).selected-variant-summary_strong]:overflow-hidden [:where(&).selected-variant-summary_strong]:[color:#17385b] [:where(&).selected-variant-summary_strong]:[font-size:11px] [:where(&).selected-variant-summary_strong]:text-ellipsis [:where(&).selected-variant-summary_strong]:whitespace-nowrap"], [2185, "[:where(&).selected-variant-summary_b]:[color:#17385b] [:where(&).selected-variant-summary_b]:[font-size:12px] [:where(&).selected-variant-summary_b]:whitespace-nowrap"])} aria-live="polite"><span>Selected combo</span><strong>{selectedProduct.name}</strong><b>৳{Number(selectedProduct.price || 0).toLocaleString("en-BD")}</b></div>}
+  {((showColorOptions && colorProducts.length > 1) || selectedProduct.slug !== product.slug) && <div className={utilities("selected-variant-summary", [2183, "[:where(&).selected-variant-summary]:grid [:where(&).selected-variant-summary]:[grid-template-columns:auto_minmax(0,_1fr)_auto] [:where(&).selected-variant-summary]:items-center [:where(&).selected-variant-summary]:[gap:8px] [:where(&).selected-variant-summary]:[margin:8px_0_0] [:where(&).selected-variant-summary]:[padding:8px_10px] [:where(&).selected-variant-summary]:[border-radius:6px] [:where(&).selected-variant-summary]:[background:#eef7ff] [:where(&).selected-variant-summary]:[color:#1e5e97] [:where(&).selected-variant-summary]:[font-size:10px]"], [2184, "[:where(&).selected-variant-summary_strong]:overflow-hidden [:where(&).selected-variant-summary_strong]:[color:#17385b] [:where(&).selected-variant-summary_strong]:[font-size:11px] [:where(&).selected-variant-summary_strong]:text-ellipsis [:where(&).selected-variant-summary_strong]:whitespace-nowrap"], [2185, "[:where(&).selected-variant-summary_b]:[color:#17385b] [:where(&).selected-variant-summary_b]:[font-size:12px] [:where(&).selected-variant-summary_b]:whitespace-nowrap"])} aria-live="polite"><span>{showColorOptions ? "Selected colour" : "Selected combo"}</span><strong>{selectedProduct.name}</strong><b>৳{Number(selectedProduct.price || 0).toLocaleString("en-BD")}</b></div>}
   
   {(selectedAccessoryIds.length > 0) && (
     <div className={utilities("selected-variant-summary", [2183, "[:where(&).selected-variant-summary]:grid [:where(&).selected-variant-summary]:[grid-template-columns:auto_minmax(0,_1fr)_auto] [:where(&).selected-variant-summary]:items-center [:where(&).selected-variant-summary]:[gap:8px] [:where(&).selected-variant-summary]:[margin:8px_0_0] [:where(&).selected-variant-summary]:[padding:8px_10px] [:where(&).selected-variant-summary]:[border-radius:6px] [:where(&).selected-variant-summary]:[background:#eef7ff] [:where(&).selected-variant-summary]:[color:#1e5e97] [:where(&).selected-variant-summary]:[font-size:10px]"], [2184, "[:where(&).selected-variant-summary_strong]:overflow-hidden [:where(&).selected-variant-summary_strong]:[color:#17385b] [:where(&).selected-variant-summary_strong]:[font-size:11px] [:where(&).selected-variant-summary_strong]:text-ellipsis [:where(&).selected-variant-summary_strong]:whitespace-nowrap"], [2185, "[:where(&).selected-variant-summary_b]:[color:#17385b] [:where(&).selected-variant-summary_b]:[font-size:12px] [:where(&).selected-variant-summary_b]:whitespace-nowrap"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[margin-top:8px] [&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:[border-top:none]"])}  aria-live="polite">

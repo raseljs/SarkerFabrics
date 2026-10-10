@@ -78,17 +78,12 @@ const sectionIconMap: Partial<Record<HomeSectionKey, typeof LayoutTemplate>> = {
   "hero-slider": LayoutTemplate,
   "brand-logos": BadgeCheck,
   "featured-categories": Boxes,
-  "visit-stores": MapPin,
   "new-arrival": Sparkles,
-  "hot-products": ShoppingBag,
   "customer-reviews": Users,
-  "dji-drone": Truck,
-  "professional-drone": Package,
-  "beginner-drone": ShieldCheck,
-  "personal-drone": Package,
-  "dji-enterprise": Boxes,
+  "women-t-shirt": ShoppingBag,
+  "men-t-shirt": ShoppingBag,
+  "hoodie": Package,
   "others": Package,
-  "enterprise-agriculture": Truck,
 };
 
 const sectionCards: SectionCard[] = HOME_SECTIONS.map((section) => ({

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import { Product } from "../products/product.model.js";
+import { createProductColours, normalizeProductColor, type ColourProductRecord, type ProductColourStore } from "../products/product-colours.service.js";
 
 import { ContentEntry } from "../content/content.model.js";
 import { requireAdmin } from "../../common/middleware/admin.middleware.js";
@@ -54,8 +55,9 @@ function prepareContentBody(resource: string, input: Record<string, unknown>) {
 }
 
 function productPayload(body: Record<string, unknown>) {
-  const fields = ["name", "slug", "brand", "category", "subcategory", "sku", "images", "galleryVideos", "youtubeUrl", "shortDescription", "description", "descriptionHtml", "descriptionCss", "sizeMeasurementHtml", "accessoriesHtml", "accessoriesCss", "keyFeatures", "specifications", "specificationTabs", "price", "oldPrice", "discount", "stock", "preorderEnabled", "preorderDepositPercent", "preorderNote", "reorderLevel", "unitCost", "warehouse", "supplier", "badge", "status", "isNewArrival", "isPopular", "isDjiDrone", "isProfessionalDrone", "isEnterpriseAgriculture", "isEnterprise", "isActive", "menuPlacements", "homePlacements", "faqs", "similarProducts", "comboProducts", "linkedAccessories"];
+  const fields = ["name", "slug", "brand", "category", "subcategory", "sku", "color", "images", "galleryVideos", "youtubeUrl", "shortDescription", "description", "descriptionHtml", "descriptionCss", "sizeMeasurementHtml", "accessoriesHtml", "accessoriesCss", "keyFeatures", "specifications", "specificationTabs", "price", "oldPrice", "discount", "stock", "preorderEnabled", "preorderDepositPercent", "preorderNote", "reorderLevel", "unitCost", "warehouse", "supplier", "badge", "status", "isNewArrival", "isPopular", "isDjiDrone", "isProfessionalDrone", "isEnterpriseAgriculture", "isEnterprise", "isActive", "menuPlacements", "homePlacements", "faqs", "similarProducts", "comboProducts", "linkedAccessories"];
   const payload = Object.fromEntries(fields.filter((field) => field in body).map((field) => [field, body[field]])) as Record<string, unknown>;
+  if ("color" in payload) payload.color = normalizeProductColor(payload.color);
   // Accept the singular `image` used by the storefront admin form while
   // persisting the canonical gallery array in MongoDB.
   if (!payload.images && typeof body.image === "string" && body.image.trim()) payload.images = [body.image.trim()];
@@ -274,6 +276,16 @@ adminRouter.get("/products", async (request, response, next) => {
   } catch (error) { next(error); }
 });
 
+adminRouter.get("/products/:id", async (request, response, next) => {
+  try {
+    if (!mongoose.isValidObjectId(request.params.id)) return response.status(400).json({ success: false, message: "Invalid product id" });
+    const data = await Product.findById(request.params.id).lean();
+    if (!data) return response.status(404).json({ success: false, message: "Product not found" });
+    const accessories = await Accessory.find({ linkedProductSlug: data.slug }).sort({ sortOrder: 1 }).lean();
+    response.json({ success: true, data: { ...data, accessories } });
+  } catch (error) { next(error); }
+});
+
 adminRouter.post("/products", async (request, response, next) => {
   try {
     const payload = productPayload(request.body as Record<string, unknown>);
@@ -283,6 +295,29 @@ adminRouter.post("/products", async (request, response, next) => {
     const responseData = data.toObject ? data.toObject() : data;
     (responseData as any).accessories = await Accessory.find({ linkedProductSlug: data.slug }).sort({ sortOrder: 1 }).lean();
     response.status(201).json({ success: true, data: responseData });
+  } catch (error) { next(error); }
+});
+
+const productColourStore: ProductColourStore = {
+  async getParent(id) { return await Product.findById(id).lean() as unknown as ColourProductRecord | null; },
+  async findProducts(slugs) { return await Product.find({ slug: { $in: slugs } }).lean() as unknown as ColourProductRecord[]; },
+  cloneFields: productPayload,
+  nextId: () => new mongoose.Types.ObjectId(),
+  async validate(payload) { await new Product(payload).validate(); },
+  async create(payload) { return (await Product.create(payload)).toObject() as unknown as ColourProductRecord; },
+  async setLinks(id, slugs) {
+    const result = await Product.updateOne({ _id: id }, { $set: { comboProducts: slugs } }, { runValidators: true });
+    if (!result.matchedCount) throw new Error("Product disappeared while saving colours");
+  },
+  async remove(ids) { await Product.deleteMany({ _id: { $in: ids } }); },
+};
+
+adminRouter.post("/products/:id/colours", async (request, response, next) => {
+  try {
+    if (!mongoose.isValidObjectId(request.params.id)) return response.status(400).json({ success: false, message: "Invalid product id" });
+    const data = await createProductColours(String(request.params.id), request.body, productColourStore);
+    await writeAudit(request, "create-colours", "product", data.product._id, { colours: data.variants.map((variant) => variant.color) });
+    response.status(201).json({ success: true, data });
   } catch (error) { next(error); }
 });
 

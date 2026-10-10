@@ -17,6 +17,10 @@ import { reviewRouter } from "../modules/reviews/review.routes.js";
 import { preorderRouter } from "../modules/preorders/preorder.routes.js";
 import { warrantyRouter } from "../modules/warranty/warranty.routes.js";
 import { inquiryRouter } from "../modules/inquiries/inquiry.routes.js";
+import { courierRouter } from "../modules/couriers/courier.routes.js";
+import { adminPixelRouter, publicPixelRouter } from "../modules/pixels/pixel.routes.js";
+
+import { adminPaymentRouter, publicPaymentRouter } from "../modules/payments/payment.routes.js";
 
 export const apiRouter = Router();
 apiRouter.use("/health", healthRouter);
@@ -36,4 +40,9 @@ apiRouter.use("/inquiries", inquiryRouter);
 apiRouter.use("/contact", contactRouter);
 apiRouter.use("/ai", aiRouter);
 apiRouter.use("/admin/media", mediaRouter);
+apiRouter.use("/admin/couriers", courierRouter);
+apiRouter.use("/pixels", publicPixelRouter);
+apiRouter.use("/admin/pixels", adminPixelRouter);
+apiRouter.use("/payments", publicPaymentRouter);
+apiRouter.use("/admin/payments", adminPaymentRouter);
 apiRouter.use("/admin", adminRouter);

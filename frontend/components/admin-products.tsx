@@ -11,6 +11,8 @@ import { starterCss, starterHtml } from "@/components/rich-description-editor";
 import { apiFormRequest, apiRequest, getApiBase } from "@/lib/api";
 import { ImageCropperModal } from "./image-cropper-modal";
 import { useAdminDialog } from "./admin-dialog";
+import ProductColoursEditor, { type ColourDraft } from "./product-colours-editor";
+import { prepareColourSave } from "@/lib/product-colours";
 
 // Component styling is compiled from these local Tailwind utilities.
 const componentUtilities: Record<string, string> = {
@@ -136,7 +138,7 @@ type SpecItem = { label: string; value: string; sortOrder: number };
 type SpecTab = { tabName: string; sortOrder: number; items: SpecItem[] };
 type AccessoryItem = { name: string; image: string; images: string[]; price: number; oldPrice: number; linkedSlug: string; sortOrder: number; descriptionHtml?: string; descriptionCss?: string; };
 type AdminProduct = {
-  id: string; name: string; slug: string; brand: string; category: string; subcategory: string; sku: string; price: number; oldPrice: number; stock: number; reorderLevel: number; unitCost: number; warehouse: string; supplier: string;
+  id: string; name: string; color: string; slug: string; brand: string; category: string; subcategory: string; sku: string; price: number; oldPrice: number; stock: number; reorderLevel: number; unitCost: number; warehouse: string; supplier: string;
   images: string[]; image: string; galleryVideos: string[]; status: ProductStatus; badge: string; youtubeUrl: string; description: string; descriptionHtml: string; descriptionCss: string; sizeMeasurementHtml: string; preorderEnabled: boolean; preorderDepositPercent: number; preorderNote: string;
   keyFeatures: string[]; isNewArrival: boolean; isPopular: boolean; isActive: boolean; isDjiDrone: boolean; isProfessionalDrone: boolean; isEnterpriseAgriculture: boolean; isEnterprise: boolean; homePlacements: HomePlacement[]; faqs: FaqItem[];
   specificationTabs: SpecTab[];
@@ -148,6 +150,7 @@ type AdminProduct = {
 };
 type ProductForm = Omit<AdminProduct, "id" | "keyFeatures" | "homePlacements"> & {
   keyFeaturesText: string;
+  colourDrafts: ColourDraft[];
   homePlacements: HomePlacement[];
 };
 
@@ -156,14 +159,14 @@ const starterProduct: AdminProduct = {
   images: ["/images/products/mini-5.jpg"], image: "/images/products/mini-5.jpg", galleryVideos: [], status: "published", badge: "HOT", youtubeUrl: "", description: "A powerful ultra-light drone for creators.", descriptionHtml: starterHtml, descriptionCss: starterCss, sizeMeasurementHtml: "", preorderEnabled: true, preorderDepositPercent: 30, preorderNote: "Reserve this product before the next shipment arrives.",
   keyFeatures: ["Official product"], isNewArrival: true, isPopular: true, isActive: true, isDjiDrone: false, isProfessionalDrone: false, isEnterpriseAgriculture: false, isEnterprise: false, homePlacements: [], faqs: [],
   specificationTabs: [], similarProducts: [], comboProducts: [], accessories: [],
-  accessoriesCss: "", linkedAccessories: [],
+  accessoriesCss: "", linkedAccessories: [], color: "",
 };
 const blank: ProductForm = {
   name: "", slug: "", brand: "DJI", category: "", subcategory: "", sku: "", price: 0, oldPrice: 0, stock: 0, reorderLevel: 5, unitCost: 0, warehouse: "Dhaka Main Warehouse", supplier: "",
   images: [], image: "", galleryVideos: [], status: "published", badge: "", youtubeUrl: "", description: "", descriptionHtml: "", descriptionCss: starterCss, sizeMeasurementHtml: "", preorderEnabled: true, preorderDepositPercent: 30, preorderNote: "Reserve this product before the next shipment arrives.",
-  keyFeaturesText: "", isNewArrival: false, isPopular: false, isActive: true, isDjiDrone: false, isProfessionalDrone: false, isEnterpriseAgriculture: false, isEnterprise: false, homePlacements: [], faqs: [],
+  keyFeaturesText: "", colourDrafts: [], isNewArrival: false, isPopular: false, isActive: true, isDjiDrone: false, isProfessionalDrone: false, isEnterpriseAgriculture: false, isEnterprise: false, homePlacements: [], faqs: [],
   specificationTabs: [], similarProducts: [], comboProducts: [], accessories: [],
-  accessoriesCss: "", linkedAccessories: [],
+  accessoriesCss: "", linkedAccessories: [], color: "",
 };
 const productKey = "drone-admin-products";
 const DRAFT_KEY = "drone-product-draft";
@@ -203,6 +206,7 @@ function normalizeProduct(value: Partial<AdminProduct> & { _id?: string; shortDe
   return {
     ...starterProduct, ...value,
     id: value.id || value._id || `managed-${index}`, images, image: value.image || images[0] || "", galleryVideos: Array.isArray(value.galleryVideos) ? value.galleryVideos.filter(Boolean) : [],
+    color: String(value.color || "").trim(),
     brand: value.brand || "DJI", category: value.category || "", subcategory: value.subcategory || "", sku: value.sku || "",
     description: value.description || value.shortDescription || "", price: Number(value.price || 0), oldPrice: Number(value.oldPrice || value.price || 0), stock: Number(value.stock || 0),
     reorderLevel: Number(value.reorderLevel || 5), unitCost: Number(value.unitCost || 0), warehouse: value.warehouse || "Dhaka Main Warehouse", supplier: value.supplier || "",
@@ -218,7 +222,7 @@ function normalizeProduct(value: Partial<AdminProduct> & { _id?: string; shortDe
 }
 
 function toForm(product: AdminProduct): ProductForm {
-  return { ...product, keyFeaturesText: product.keyFeatures.join("\n"), homePlacements: product.homePlacements.map(item => ({ ...item })), faqs: product.faqs.map(item => ({ ...item })), specificationTabs: (product.specificationTabs || []).map(t => ({ ...t, items: t.items.map(it => ({ ...it })) })), similarProducts: [...(product.similarProducts || [])], comboProducts: [...(product.comboProducts || [])], linkedAccessories: [...(product.linkedAccessories || [])], accessories: [...(product.accessories || [])] };
+  return { ...product, keyFeaturesText: product.keyFeatures.join("\n"), homePlacements: product.homePlacements.map(item => ({ ...item })), faqs: product.faqs.map(item => ({ ...item })), specificationTabs: (product.specificationTabs || []).map(t => ({ ...t, items: t.items.map(it => ({ ...it })) })), similarProducts: [...(product.similarProducts || [])], comboProducts: [...(product.comboProducts || [])], linkedAccessories: [...(product.linkedAccessories || [])], accessories: [...(product.accessories || [])], colourDrafts: [] };
 }
 
 function slugify(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
@@ -226,11 +230,16 @@ function slugify(value: string) { return value.toLowerCase().trim().replace(/[^a
 export default function AdminProducts() {
   const [pageLoading, setPageLoading] = useState(true);
   const { confirm } = useAdminDialog();
-  const [cropSource, setCropSource] = useState<string | null>(null);
+  const [cropQueue, setCropQueue] = useState<Array<{ name: string; source: string; colourId?: string }>>([]);
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+  const [uploadingColourId, setUploadingColourId] = useState<string | null>(null);
+  const [savingProduct, setSavingProduct] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const importRef = useRef<HTMLInputElement | null>(null);
+  const cropUploadLockRef = useRef(false);
+
+  const currentCropImage = cropQueue[0] || null;
 
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [form, setForm] = useState<ProductForm>(blank);
@@ -317,7 +326,7 @@ export default function AdminProducts() {
       if (raw) {
         const d = JSON.parse(raw);
         if (d.form && (d.editing || d.form.name)) {
-          setForm({ ...blank, ...d.form, linkedAccessories: Array.isArray(d.form.linkedAccessories) ? d.form.linkedAccessories : [], comboProducts: Array.isArray(d.form.comboProducts) ? d.form.comboProducts : [], accessories: Array.isArray(d.form.accessories) ? d.form.accessories : [], similarProducts: Array.isArray(d.form.similarProducts) ? d.form.similarProducts : [], specificationTabs: Array.isArray(d.form.specificationTabs) ? d.form.specificationTabs : [] });
+          setForm({ ...blank, ...d.form, color: String(d.form.color || ""), colourDrafts: Array.isArray(d.form.colourDrafts) ? d.form.colourDrafts.map((draft: ColourDraft) => ({ id: draft.id || crypto.randomUUID(), color: String(draft.color || ""), images: Array.isArray(draft.images) ? draft.images.filter(url => typeof url === "string") : [], stock: Number(draft.stock || 0) })) : [], linkedAccessories: Array.isArray(d.form.linkedAccessories) ? d.form.linkedAccessories : [], comboProducts: Array.isArray(d.form.comboProducts) ? d.form.comboProducts : [], accessories: Array.isArray(d.form.accessories) ? d.form.accessories : [], similarProducts: Array.isArray(d.form.similarProducts) ? d.form.similarProducts : [], specificationTabs: Array.isArray(d.form.specificationTabs) ? d.form.specificationTabs : [] });
           setEditing(d.editing || null);
         }
       }
@@ -357,7 +366,7 @@ export default function AdminProducts() {
     const matches = products.filter(p =>
       p.slug !== form.slug &&
       !already.has(p.slug) &&
-      (`${p.name} ${p.slug} ${p.brand} ${p.category}`).toLowerCase().includes(q)
+      (`${p.name} ${p.color} ${p.slug} ${p.brand} ${p.category}`).toLowerCase().includes(q)
     ).slice(0, 8);
     setComboSuggestions(matches);
   }, [comboQuery, products, form.comboProducts, form.slug]);
@@ -397,13 +406,20 @@ export default function AdminProducts() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    
+    if (savingProduct || cropQueue.length || uploadingImage || uploadingVideo) return;
+    let savedProduct: AdminProduct | null = null;
+    setSavingProduct(true);
+    try {
+    const colours = prepareColourSave({ color: form.color, images: form.images.length ? form.images : (form.image ? [form.image] : []), stock: form.stock }, form.colourDrafts);
+    const pendingDrafts = colours.remainingDraftIndices.map(index => form.colourDrafts[index]);
+    const previousLinks = products.find(product => product.id === editing)?.comboProducts || [];
+    const syncColourGroup = Boolean(colours.variants.length || form.comboProducts.length || previousLinks.length);
     const payload = {
       name: form.name, slug: form.slug || slugify(form.name), brand: form.brand, category: form.category, subcategory: form.subcategory || undefined,
-      sku: form.sku, price: form.price, oldPrice: form.oldPrice || form.price, stock: form.stock,
+      sku: form.sku, color: colours.primary.color, price: form.price, oldPrice: form.oldPrice || form.price, stock: colours.primary.stock,
       preorderEnabled: form.preorderEnabled, preorderDepositPercent: form.preorderDepositPercent, preorderNote: form.preorderNote,
       reorderLevel: form.reorderLevel, unitCost: form.unitCost, warehouse: form.warehouse, supplier: form.supplier,
-      images: form.images.length ? form.images : (form.image ? [form.image] : []),
+      images: colours.primary.images,
       galleryVideos: form.galleryVideos,
       youtubeUrl: form.youtubeUrl,
       shortDescription: form.description, descriptionHtml: form.descriptionHtml, descriptionCss: form.descriptionCss, sizeMeasurementHtml: form.sizeMeasurementHtml,
@@ -415,23 +431,48 @@ export default function AdminProducts() {
       faqs: form.faqs.map((item, i) => ({ ...item, sortOrder: i })),
       specificationTabs: form.specificationTabs.map((tab, ti) => ({ tabName: tab.tabName, sortOrder: ti, items: tab.items.map((it, ii) => ({ label: it.label, value: it.value, sortOrder: ii })) })),
       similarProducts: form.similarProducts,
-      comboProducts: form.comboProducts,
+      comboProducts: editing && syncColourGroup ? undefined : form.comboProducts,
       linkedAccessories: form.linkedAccessories,
       accessories: form.accessories.map((a, i) => ({ name: a.name, image: a.image, images: a.images, price: a.price, oldPrice: a.oldPrice, linkedSlug: a.linkedSlug, descriptionHtml: a.descriptionHtml, descriptionCss: a.descriptionCss, sortOrder: i })),
     };
-    try {
       if (getApiBase()) {
         const response = await apiRequest<{ data?: unknown }>(editing ? `/admin/products/${editing}` : "/admin/products", { method: editing ? "PATCH" : "POST", body: JSON.stringify(payload) });
-        const saved = normalizeProduct(response.data as Partial<AdminProduct> & { _id?: string }, products.length);
-        setProducts(current => editing ? current.map(item => item.id === editing ? saved : item) : [saved, ...current]);
+        savedProduct = normalizeProduct(response.data as Partial<AdminProduct> & { _id?: string }, products.length);
+        const base = savedProduct;
+        setEditing(base.id);
+        setForm(current => ({ ...current, slug: base.slug, color: base.color, images: base.images, image: base.image, stock: base.stock, comboProducts: [...base.comboProducts], colourDrafts: pendingDrafts }));
+        setProducts(current => [base, ...current.filter(item => item.id !== base.id)]);
+        if (syncColourGroup) {
+          const result = await apiRequest<{ data: { product: Partial<AdminProduct> & { _id?: string }; variants: Array<Partial<AdminProduct> & { _id?: string }> } }>(`/admin/products/${base.id}/colours`, { method: "POST", body: JSON.stringify({ variants: colours.variants, comboProducts: form.comboProducts }) });
+          savedProduct = normalizeProduct(result.data.product);
+          const savedColours = [savedProduct, ...result.data.variants.map((variant, index) => normalizeProduct(variant, index))];
+          const group = [savedProduct.slug, ...savedProduct.comboProducts];
+          const oldGroup = [base.slug, ...base.comboProducts];
+          setProducts(current => [...savedColours, ...current.filter(item => !savedColours.some(saved => saved.id === item.id)).map(item => group.includes(item.slug) ? { ...item, comboProducts: group.filter(slug => slug !== item.slug) } : oldGroup.includes(item.slug) ? { ...item, comboProducts: item.comboProducts.filter(slug => !oldGroup.includes(slug)) } : item)]);
+        }
       } else {
-        const saved = normalizeProduct({ ...payload, id: editing || crypto.randomUUID(), accessories: form.accessories }, products.length);
-        persist(editing ? products.map(item => item.id === editing ? saved : item) : [saved, ...products]);
+        const base = normalizeProduct({ ...payload, comboProducts: form.comboProducts, id: editing || crypto.randomUUID(), accessories: form.accessories }, products.length);
+        const variants = colours.variants.map((colour, index) => normalizeProduct({ ...base, ...colour, id: crypto.randomUUID(), name: `${base.name} — ${colour.color}`, slug: `${base.slug}-${slugify(colour.color) || "colour"}-${crypto.randomUUID().slice(0, 8)}`, sku: base.sku ? `${base.sku}-C${index + 1}-${crypto.randomUUID().slice(0, 4)}` : "", image: colour.images[0] }, index));
+        const group = [...new Set([base.slug, ...form.comboProducts, ...variants.map(variant => variant.slug)])];
+        const grouped = [base, ...variants].map(product => ({ ...product, comboProducts: group.filter(slug => slug !== product.slug) }));
+        const oldGroup = [base.slug, ...previousLinks];
+        const current = products.filter(product => product.id !== base.id).map(product => group.includes(product.slug) ? { ...product, comboProducts: group.filter(slug => slug !== product.slug) } : oldGroup.includes(product.slug) ? { ...product, comboProducts: product.comboProducts.filter(slug => !oldGroup.includes(slug)) } : product);
+        persist([...grouped, ...current]);
       }
-      toast.success(editing ? "Product updated" : "Product created");
+      toast.success(editing ? "Product and colours updated" : "Product and colours created");
       setEditing(null); setForm(blank); localStorage.removeItem(DRAFT_KEY);
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to save product"); }
-    
+    } catch (e) {
+      if (savedProduct && getApiBase()) {
+        const savedId = savedProduct.id;
+        try {
+          const latest = await apiRequest<{ data?: unknown }>(`/admin/products/${savedId}`);
+          const refreshed = normalizeProduct(latest.data as Partial<AdminProduct> & { _id?: string });
+          setForm(current => ({ ...current, comboProducts: refreshed.comboProducts }));
+          setProducts(current => [refreshed, ...current.filter(item => item.id !== refreshed.id)]);
+        } catch { /* Keep the saved product id and unfinished colour drafts for retry. */ }
+      }
+      toast.error(e instanceof Error ? e.message : "Unable to save product and colours");
+    } finally { setSavingProduct(false); }
   }
 
   function edit(product: AdminProduct) { setForm(toForm(product)); setEditing(product.id); window.scrollTo({ top: 0, behavior: "smooth" }); }
@@ -446,10 +487,11 @@ export default function AdminProducts() {
     } catch (e) { toast.error(e instanceof Error ? e.message : "Unable to delete product"); }
   }
 
-  async function readImage(file?: File) {
-    if (!file) return;
+  async function readImage(file?: File, colourId?: string) {
+    if (!file) return false;
     const previewUrl = URL.createObjectURL(file);
     setUploadingImage(previewUrl);
+    setUploadingColourId(colourId || null);
     try {
       let url = "";
       if (getApiBase()) {
@@ -459,8 +501,68 @@ export default function AdminProducts() {
       } else {
         url = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); });
       }
-      if (url) setForm(current => ({ ...current, images: [...current.images, url], image: current.image || url }));
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Image upload failed"); } finally { setUploadingImage(null); }
+      if (!url) throw new Error("The image upload did not return a photo URL.");
+      setForm(current => colourId
+        ? { ...current, colourDrafts: current.colourDrafts.map(draft => draft.id === colourId ? { ...draft, images: [...draft.images, url] } : draft) }
+        : { ...current, images: [...current.images, url], image: current.image || url });
+      return true;
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Image upload failed"); return false; } finally {
+      setUploadingImage(null);
+      setUploadingColourId(null);
+      URL.revokeObjectURL(previewUrl);
+    }
+  }
+
+  function queueProductImages(files: FileList | null) {
+    const selectedImages = Array.from(files || []).filter(file => file.type.startsWith("image/"));
+    if (selectedImages.length === 0) return;
+    setCropQueue(current => [
+      ...current,
+      ...selectedImages.map(file => ({ name: file.name, source: URL.createObjectURL(file) })),
+    ]);
+  }
+
+  function addColour() {
+    if (form.colourDrafts.length >= 20) { toast.error("Add up to 20 colours at a time."); return; }
+    setForm(current => ({ ...current, colourDrafts: [...current.colourDrafts, { id: crypto.randomUUID(), color: "", images: [], stock: current.stock }] }));
+  }
+
+  function uploadColours(files: FileList | null) {
+    const selected = Array.from(files || []).filter(file => file.type.startsWith("image/"));
+    if (!selected.length) return;
+    if (selected.length + form.colourDrafts.length > 20) { toast.error("Add up to 20 colours at a time."); return; }
+    const drafts = selected.map(() => ({ id: crypto.randomUUID(), color: "", images: [] as string[], stock: form.stock }));
+    setForm(current => ({ ...current, colourDrafts: [...current.colourDrafts, ...drafts] }));
+    setCropQueue(current => [...current, ...selected.map((file, index) => ({ name: file.name, source: URL.createObjectURL(file), colourId: drafts[index].id }))]);
+  }
+
+  function uploadColourImages(id: string, files: FileList | null) {
+    const selected = Array.from(files || []).filter(file => file.type.startsWith("image/"));
+    const draft = form.colourDrafts.find(colour => colour.id === id);
+    if (!draft || !selected.length) return;
+    if (draft.images.length + selected.length > 20) { toast.error("Upload up to 20 photos per colour."); return; }
+    setCropQueue(current => [...current, ...selected.map(file => ({ name: file.name, source: URL.createObjectURL(file), colourId: id }))]);
+  }
+
+  function advanceCropQueue() {
+    setCropQueue(current => {
+      const [completed, ...remaining] = current;
+      if (completed) URL.revokeObjectURL(completed.source);
+      return remaining;
+    });
+  }
+
+  async function uploadCurrentCrop(blob: Blob) {
+    if (!currentCropImage || cropUploadLockRef.current) return;
+    cropUploadLockRef.current = true;
+    try {
+      const extension = blob.type === "image/png" ? "png" : "jpg";
+      const originalBaseName = currentCropImage.name.replace(/\.[^.]+$/, "") || "product-image";
+      const file = new File([blob], `${originalBaseName}.${extension}`, { type: blob.type });
+      if (await readImage(file, currentCropImage.colourId)) advanceCropQueue();
+    } finally {
+      cropUploadLockRef.current = false;
+    }
   }
 
   async function uploadVideo(file?: File) {
@@ -668,13 +770,8 @@ export default function AdminProducts() {
 
           {/* ── Gallery images ── */}
           <label>Gallery images
-            <input type="file" accept="image/*" onChange={e => {
-              const file = e.target.files?.[0];
-              if (file) {
-                const reader = new FileReader();
-                reader.onload = () => setCropSource(String(reader.result));
-                reader.readAsDataURL(file);
-              }
+            <input type="file" accept="image/*" multiple onChange={e => {
+              queueProductImages(e.target.files);
               e.target.value = "";
             }}/>
             <small className={utilities("file-hint", [175, "[:where(&).file-hint]:flex! [:where(&).file-hint]:items-center [:where(&).file-hint]:[gap:5px] [:where(&).file-hint]:[color:#7a879d]!"])}><ImagePlus size={14}/>Upload one or more product images</small>
@@ -821,29 +918,30 @@ export default function AdminProducts() {
 
           {/* ── Multiple product colour variants ── */}
           <div className={utilities("admin-special-fields combo-products-editor", [1964, "[:where(&).admin-special-fields]:[margin:4px_0_2px] [:where(&).admin-special-fields]:[padding:14px] [:where(&).admin-special-fields]:[border:1px_solid_#e3e8ef] [:where(&).admin-special-fields]:[border-radius:8px] [:where(&).admin-special-fields]:[background:#f9fbfe]"], [1965, "[:where(&).admin-special-fields_h3]:[margin:0_0_12px] [:where(&).admin-special-fields_h3]:[font-size:13px] [:where(&).admin-special-fields_h3]:[color:#18365e]"])}>
-            <h3>Multiple Product Colours</h3>
-            <p className={utilities("admin-field-help", [1969, "[:where(&).admin-field-help]:[margin:10px_0_0] [:where(&).admin-field-help]:[color:#748095] [:where(&).admin-field-help]:[font-size:10px] [:where(&).admin-field-help]:[line-height:1.5]"])}>Create each colour as a separate product with its own gallery images, then search and add those products here. Customers will see them as selectable colour thumbnails on the product page.</p>
-            {form.comboProducts.length === 0 && (
-              <div className="mb-3 mt-3 flex min-h-24 items-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-slate-500">
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-600"><ImagePlus size={21}/></span>
-                <div className="min-w-0">
-                  <strong className="block text-[13px] font-semibold text-slate-700">No colour products added yet</strong>
-                  <span className="mt-1 block text-[11px] leading-5">Upload each colour as a product, then use the search box below to link multiple colours.</span>
-                </div>
-              </div>
-            )}
-            {form.comboProducts.length > 0 && (
-              <div className={utilities("admin-tags-list", [2000, "[:where(&).admin-tags-list]:flex [:where(&).admin-tags-list]:flex-wrap [:where(&).admin-tags-list]:[gap:8px] [:where(&).admin-tags-list]:[margin-bottom:10px]"])}>
-                {form.comboProducts.map(slug => {
-                  const prod = products.find(p => p.slug === slug);
-                  return <span key={slug} className={utilities("admin-tag", [2001, "[:where(&).admin-tag]:inline-flex [:where(&).admin-tag]:items-center [:where(&).admin-tag]:[gap:6px] [:where(&).admin-tag]:[background:#e8effa] [:where(&).admin-tag]:[color:#2b4fa0] [:where(&).admin-tag]:[border:1px_solid_#c5d4ef] [:where(&).admin-tag]:[border-radius:20px] [:where(&).admin-tag]:[padding:4px_10px_4px_8px] [:where(&).admin-tag]:[font-size:12px] [:where(&).admin-tag]:font-semibold"], [2002, "[:where(&).admin-tag_img]:[width:20px] [:where(&).admin-tag_img]:[height:20px] [:where(&).admin-tag_img]:object-cover [:where(&).admin-tag_img]:[border-radius:4px]"], [2003, "[:where(&).admin-tag_button]:[background:none] [:where(&).admin-tag_button]:[border:none] [:where(&).admin-tag_button]:cursor-pointer [:where(&).admin-tag_button]:[color:#6b83c0] [:where(&).admin-tag_button]:[font-size:14px] [:where(&).admin-tag_button]:[line-height:1] [:where(&).admin-tag_button]:[padding:0_2px] [:where(&).admin-tag_button]:[margin-left:2px]"], [2004, "[:where(&).admin-tag_button:hover]:[color:#c0392b]"])}>{prod && <img src={prod.image || prod.images?.[0] || "/images/products/mini-5.jpg"} alt="" />}{prod ? prod.name : slug}<button type="button" aria-label={`Remove ${prod ? prod.name : slug}`} onClick={() => setForm({ ...form, comboProducts: form.comboProducts.filter(s => s !== slug) })}>×</button></span>;
-                })}
-              </div>
-            )}
+            <ProductColoursEditor
+              drafts={form.colourDrafts}
+              primaryColor={form.color}
+              primaryStock={form.stock}
+              primaryHasImages={Boolean(form.images.length || form.image)}
+              linkedProducts={form.comboProducts.map(slug => products.find(product => product.slug === slug) || { slug, name: slug })}
+              uploadingColourId={uploadingColourId}
+              busy={savingProduct || cropQueue.length > 0}
+              onAdd={addColour}
+              onUploadColours={uploadColours}
+              onUploadImages={uploadColourImages}
+              onChange={(id, patch) => setForm(current => ({ ...current, colourDrafts: current.colourDrafts.map(draft => draft.id === id ? { ...draft, ...patch } : draft) }))}
+              onRemove={id => setForm(current => ({ ...current, colourDrafts: current.colourDrafts.filter(draft => draft.id !== id) }))}
+              onRemoveImage={(id, url) => setForm(current => ({ ...current, colourDrafts: current.colourDrafts.map(draft => draft.id === id ? { ...draft, images: draft.images.filter(image => image !== url) } : draft) }))}
+              onRemoveLinked={slug => setForm(current => ({ ...current, comboProducts: current.comboProducts.filter(value => value !== slug) }))}
+            />
+            <label className="mt-3 block text-xs font-semibold text-slate-700">Current product colour
+              <input aria-label="Current product colour" value={form.color} maxLength={100} placeholder="e.g. Black, White or Navy Blue" required={form.colourDrafts.length > 0 && Boolean(form.images.length || form.image)} disabled={savingProduct} onChange={event => setForm(current => ({ ...current, color: event.target.value }))} />
+            </label>
+            <p className="mb-3 mt-1 text-[11px] leading-relaxed text-slate-500">Name the colour shown in the main product photos. Photos uploaded with this same colour name join the main gallery and use the main product stock. You can also link a colour product already in your catalogue below.</p>
             <div className={utilities("admin-autocomplete-wrap", [2006, "[:where(&).admin-autocomplete-wrap]:relative"], [2007, "[:where(&).admin-autocomplete-wrap_input]:[width:100%]"], [10000, "[&:not(#tailwind-inline#tailwind-inline#tailwind-inline)]:relative"])} >
               <input ref={comboRef} value={comboQuery} onChange={e => setComboQuery(e.target.value)} placeholder="Search a product colour to add, e.g. Black, White or Blue…" autoComplete="off" />
               {comboSuggestions.length > 0 && <ul className={utilities("admin-autocomplete-dropdown", [2008, "[:where(&).admin-autocomplete-dropdown]:absolute [:where(&).admin-autocomplete-dropdown]:[top:calc(100%_+_4px)] [:where(&).admin-autocomplete-dropdown]:[left:0] [:where(&).admin-autocomplete-dropdown]:[right:0] [:where(&).admin-autocomplete-dropdown]:[z-index:200] [:where(&).admin-autocomplete-dropdown]:[background:#fff] [:where(&).admin-autocomplete-dropdown]:[border:1.5px_solid_#c5d4ef] [:where(&).admin-autocomplete-dropdown]:[border-radius:10px] [:where(&).admin-autocomplete-dropdown]:[box-shadow:0_8px_24px_rgba(0,_0,_0,_0.12)] [:where(&).admin-autocomplete-dropdown]:[list-style:none] [:where(&).admin-autocomplete-dropdown]:[margin:0] [:where(&).admin-autocomplete-dropdown]:[padding:4px] [:where(&).admin-autocomplete-dropdown]:[max-height:260px] [:where(&).admin-autocomplete-dropdown]:overflow-y-auto"], [2009, "[:where(&).admin-autocomplete-dropdown_li]:[border-radius:7px] [:where(&).admin-autocomplete-dropdown_li]:overflow-hidden"], [2010, "[:where(&).admin-autocomplete-dropdown_li_button]:flex [:where(&).admin-autocomplete-dropdown_li_button]:items-center [:where(&).admin-autocomplete-dropdown_li_button]:[gap:10px] [:where(&).admin-autocomplete-dropdown_li_button]:[width:100%] [:where(&).admin-autocomplete-dropdown_li_button]:[background:none] [:where(&).admin-autocomplete-dropdown_li_button]:[border:none] [:where(&).admin-autocomplete-dropdown_li_button]:cursor-pointer [:where(&).admin-autocomplete-dropdown_li_button]:[padding:8px_10px] [:where(&).admin-autocomplete-dropdown_li_button]:text-left [:where(&).admin-autocomplete-dropdown_li_button]:[border-radius:7px] [:where(&).admin-autocomplete-dropdown_li_button]:[transition:background_0.15s]"], [2011, "[:where(&).admin-autocomplete-dropdown_li_button:hover]:[background:#f0f4ff]"], [2012, "[:where(&).admin-autocomplete-dropdown_li_button_img]:[width:38px] [:where(&).admin-autocomplete-dropdown_li_button_img]:[height:32px] [:where(&).admin-autocomplete-dropdown_li_button_img]:object-cover [:where(&).admin-autocomplete-dropdown_li_button_img]:[border-radius:5px] [:where(&).admin-autocomplete-dropdown_li_button_img]:[flex-shrink:0]"], [2013, "[:where(&).admin-autocomplete-dropdown_li_button_span]:flex [:where(&).admin-autocomplete-dropdown_li_button_span]:flex-col [:where(&).admin-autocomplete-dropdown_li_button_span]:[gap:1px]"], [2014, "[:where(&).admin-autocomplete-dropdown_li_button_strong]:[font-size:13px] [:where(&).admin-autocomplete-dropdown_li_button_strong]:[color:#1a2a4a]"], [2015, "[:where(&).admin-autocomplete-dropdown_li_button_small]:[font-size:11px] [:where(&).admin-autocomplete-dropdown_li_button_small]:[color:#7a8797]"])}>
-                {comboSuggestions.map(p => <li key={p.slug}><button type="button" onClick={() => { setForm({ ...form, comboProducts: [...form.comboProducts, p.slug] }); setComboQuery(""); setComboSuggestions([]); comboRef.current?.focus(); }}><img src={p.image || "/images/products/mini-5.jpg"} alt="" /><span><strong>{p.name}</strong><small>{p.brand} · {p.category} · ৳{p.price.toLocaleString("en-BD")}</small></span></button></li>)}
+                {comboSuggestions.map(p => <li key={p.slug}><button type="button" onClick={() => { setForm({ ...form, comboProducts: [...form.comboProducts, p.slug] }); setComboQuery(""); setComboSuggestions([]); comboRef.current?.focus(); }}><img src={p.image || "/images/products/mini-5.jpg"} alt="" /><span><strong>{p.color ? `${p.color} — ${p.name}` : p.name}</strong><small>{p.brand} · {p.category} · ৳{p.price.toLocaleString("en-BD")}</small></span></button></li>)}
               </ul>}
             </div>
           </div>
@@ -878,7 +976,7 @@ export default function AdminProducts() {
 
 
 
-          <button className={utilities("button button-red", [62, "[:where(&).button]:[min-height:39px] [:where(&).button]:inline-flex [:where(&).button]:items-center [:where(&).button]:justify-center [:where(&).button]:[gap:7px] [:where(&).button]:[border-radius:4px] [:where(&).button]:[padding:0_17px] [:where(&).button]:font-bold [:where(&).button]:cursor-pointer [:where(&).button]:[border:1px_solid_transparent]"], [65, "[:where(&).button-red]:[background:var(--red)] [:where(&).button-red]:[color:#fff]"], [280, "[.cart-summary_:where(&).button]:[width:100%] [.cart-summary_:where(&).button]:[margin-top:12px]"], [286, "[.checkout-form>:where(&).button]:[width:max-content] [.checkout-form>:where(&).button]:[margin-top:6px]"], [446, "[.purchase-actions>:where(&).button-red]:[min-height:35px] [.purchase-actions>:where(&).button-red]:[flex:1]"], [447, "[.purchase-actions_:where(&).cart-action,_.purchase-actions_:where(&).button-red]:[font-size:16px]"], [492, "[.accessory-card_:where(&).button]:[width:100%] [.accessory-card_:where(&).button]:[margin-top:12px] [.accessory-card_:where(&).button]:[border-radius:6px] [.accessory-card_:where(&).button]:text-ellipsis [.accessory-card_:where(&).button]:overflow-hidden [.accessory-card_:where(&).button]:whitespace-nowrap"], [603, "[:is(:where(&).button)]:[font-size:14px]"], [654, "[:is(.accessory-card_:where(&).button)]:[font-size:10px] [:is(.accessory-card_:where(&).button)]:[padding:0_4px] [:is(.accessory-card_:where(&).button)]:[min-height:30px]"], [683, "[@media_(max-width:_720px)]:[:where(&).button,_:where(&).text-link]:[font-size:12px]"], [809, "[.package-card_footer_:where(&).button]:[font-size:11px] [.package-card_footer_:where(&).button]:[min-height:32px] [.package-card_footer_:where(&).button]:[padding:0_13px]"], [818, "[.maintenance-cta_:where(&).button]:[margin-right:15px]"], [837, "[@media_(max-width:_720px)]:[.maintenance-cta_:where(&).button]:[margin:0_0_12px]"], [1225, "[.combo-modal>footer_:where(&).button]:[min-height:36px]"], [1289, "[@media_(max-width:_720px)]:[.combo-modal>footer_:where(&).button]:[width:100%]"], [2189, "[.purchase-actions_:where(&).button-red]:[background:var(--red)]"], [2383, "[@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:inline-block [@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:[margin-top:15px]"], [2479, "[.reference-toolbar_:where(&).button]:[height:34px] [.reference-toolbar_:where(&).button]:[padding:0_10px] [.reference-toolbar_:where(&).button]:[font-size:10px]"], [2491, "[.order-actions_:where(&).button]:[font-size:9px] [.order-actions_:where(&).button]:[padding:6px_14px]"], [2542, "[.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[height:34px] [.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[font-size:9px]"], [2579, "[.order-confirmation-actions_:where(&).button]:flex [.order-confirmation-actions_:where(&).button]:items-center [.order-confirmation-actions_:where(&).button]:justify-center [.order-confirmation-actions_:where(&).button]:[gap:7px] [.order-confirmation-actions_:where(&).button]:[min-height:43px] [.order-confirmation-actions_:where(&).button]:[text-decoration:none]"], [2587, "[.invoice-actions_:where(&).button]:flex [.invoice-actions_:where(&).button]:items-center [.invoice-actions_:where(&).button]:justify-center [.invoice-actions_:where(&).button]:[gap:6px]"], [2627, "[@media_(max-width:680px)]:[.invoice-actions_:where(&).button]:[flex:1_1_100%]"], [2653, "[.drawer-edit-actions_:where(&).button]:[height:31px] [.drawer-edit-actions_:where(&).button]:[padding:0_11px] [.drawer-edit-actions_:where(&).button]:[font-size:9px]"], [2830, "[@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[flex:1] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[min-height:38px] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[font-size:14px] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:font-bold [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[padding:0_4px]"])} type="submit">{editing ? <><Save size={15}/>Save product</> : <><Plus size={15}/>Create product</>}</button>
+          <button className={utilities("button button-red", [62, "[:where(&).button]:[min-height:39px] [:where(&).button]:inline-flex [:where(&).button]:items-center [:where(&).button]:justify-center [:where(&).button]:[gap:7px] [:where(&).button]:[border-radius:4px] [:where(&).button]:[padding:0_17px] [:where(&).button]:font-bold [:where(&).button]:cursor-pointer [:where(&).button]:[border:1px_solid_transparent]"], [65, "[:where(&).button-red]:[background:var(--red)] [:where(&).button-red]:[color:#fff]"], [280, "[.cart-summary_:where(&).button]:[width:100%] [.cart-summary_:where(&).button]:[margin-top:12px]"], [286, "[.checkout-form>:where(&).button]:[width:max-content] [.checkout-form>:where(&).button]:[margin-top:6px]"], [446, "[.purchase-actions>:where(&).button-red]:[min-height:35px] [.purchase-actions>:where(&).button-red]:[flex:1]"], [447, "[.purchase-actions_:where(&).cart-action,_.purchase-actions_:where(&).button-red]:[font-size:16px]"], [492, "[.accessory-card_:where(&).button]:[width:100%] [.accessory-card_:where(&).button]:[margin-top:12px] [.accessory-card_:where(&).button]:[border-radius:6px] [.accessory-card_:where(&).button]:text-ellipsis [.accessory-card_:where(&).button]:overflow-hidden [.accessory-card_:where(&).button]:whitespace-nowrap"], [603, "[:is(:where(&).button)]:[font-size:14px]"], [654, "[:is(.accessory-card_:where(&).button)]:[font-size:10px] [:is(.accessory-card_:where(&).button)]:[padding:0_4px] [:is(.accessory-card_:where(&).button)]:[min-height:30px]"], [683, "[@media_(max-width:_720px)]:[:where(&).button,_:where(&).text-link]:[font-size:12px]"], [809, "[.package-card_footer_:where(&).button]:[font-size:11px] [.package-card_footer_:where(&).button]:[min-height:32px] [.package-card_footer_:where(&).button]:[padding:0_13px]"], [818, "[.maintenance-cta_:where(&).button]:[margin-right:15px]"], [837, "[@media_(max-width:_720px)]:[.maintenance-cta_:where(&).button]:[margin:0_0_12px]"], [1225, "[.combo-modal>footer_:where(&).button]:[min-height:36px]"], [1289, "[@media_(max-width:_720px)]:[.combo-modal>footer_:where(&).button]:[width:100%]"], [2189, "[.purchase-actions_:where(&).button-red]:[background:var(--red)]"], [2383, "[@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:inline-block [@media_(max-width:768px)]:[.contact-location-heading_:where(&).button]:[margin-top:15px]"], [2479, "[.reference-toolbar_:where(&).button]:[height:34px] [.reference-toolbar_:where(&).button]:[padding:0_10px] [.reference-toolbar_:where(&).button]:[font-size:10px]"], [2491, "[.order-actions_:where(&).button]:[font-size:9px] [.order-actions_:where(&).button]:[padding:6px_14px]"], [2542, "[.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[height:34px] [.drawer-actions_:where(&).button,_:where(&).drawer-actions_select]:[font-size:9px]"], [2579, "[.order-confirmation-actions_:where(&).button]:flex [.order-confirmation-actions_:where(&).button]:items-center [.order-confirmation-actions_:where(&).button]:justify-center [.order-confirmation-actions_:where(&).button]:[gap:7px] [.order-confirmation-actions_:where(&).button]:[min-height:43px] [.order-confirmation-actions_:where(&).button]:[text-decoration:none]"], [2587, "[.invoice-actions_:where(&).button]:flex [.invoice-actions_:where(&).button]:items-center [.invoice-actions_:where(&).button]:justify-center [.invoice-actions_:where(&).button]:[gap:6px]"], [2627, "[@media_(max-width:680px)]:[.invoice-actions_:where(&).button]:[flex:1_1_100%]"], [2653, "[.drawer-edit-actions_:where(&).button]:[height:31px] [.drawer-edit-actions_:where(&).button]:[padding:0_11px] [.drawer-edit-actions_:where(&).button]:[font-size:9px]"], [2830, "[@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[flex:1] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[min-height:38px] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[font-size:14px] [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:font-bold [@media_(max-width:_720px)]:[.purchase-actions_:where(&).button-red]:[padding:0_4px]"])} type="submit" disabled={savingProduct || cropQueue.length > 0 || Boolean(uploadingImage || uploadingVideo)}>{savingProduct ? <><Loader2 size={15} className="animate-spin"/>Saving product and colours…</> : editing ? <><Save size={15}/>Save product</> : <><Plus size={15}/>Create product</>}</button>
         </form>
 
         {/* ── Product list ── */}
@@ -914,17 +1012,16 @@ export default function AdminProducts() {
         </section>
       </div>
 
-      {cropSource && (
+      {currentCropImage && (
         <ImageCropperModal
-          imageSrc={cropSource}
+          key={currentCropImage.source}
+          imageSrc={currentCropImage.source}
           aspectRatio={1}
           targetWidth={600}
           targetHeight={600}
-          onClose={() => setCropSource(null)}
+          onClose={() => { if (!cropUploadLockRef.current) advanceCropQueue(); }}
           onCropComplete={(blob) => {
-            const file = new File([blob], `cropped_image.${blob.type === "image/png" ? "png" : "jpg"}`, { type: blob.type });
-            void readImage(file);
-            setCropSource(null);
+            void uploadCurrentCrop(blob);
           }}
         />
       )}

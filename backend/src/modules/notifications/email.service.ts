@@ -1,12 +1,13 @@
 import { env } from "../../config/env.js";
 import nodemailer from "nodemailer";
 import { isValidEmail } from "../../common/utils/security.js";
+import { resolveEmailProvider, resolveEmailSender } from "./email.configuration.js";
 
 /**
  * Small, provider-neutral email adapter.  Production can use Resend (or any
  * compatible JSON email endpoint) without adding a mail client dependency to
- * the storefront.  When no key is configured we log a safe, actionable
- * message and keep the stock/pre-order transaction successful.
+ * the storefront. Delivery results let callers report safe failures while
+ * keeping order and stock transactions successful.
  */
 type EmailPayload = { to: string | string[]; subject: string; text: string; html: string };
 
@@ -33,27 +34,41 @@ export async function sendNotificationEmail(payload: EmailPayload) {
   if (recipients.some((recipient) => !isValidEmail(recipient))) return { sent: false, reason: "invalid-recipient" };
   const subject = String(payload.subject || "").replace(/[\r\n]+/g, " ").trim().slice(0, 200);
   if (!subject) return { sent: false, reason: "missing-subject" };
-  if (!env.emailApiKey && !(env.emailSmtpHost && env.emailSmtpUser && env.emailSmtpPassword)) {
-    console.info(`[email] ${subject} -> ${recipients.join(", ")} (configure EMAIL_API_KEY or EMAIL_SMTP_* to send)`);
-    return { sent: false, reason: "EMAIL_PROVIDER_NOT_CONFIGURED" };
+  const provider = resolveEmailProvider(env);
+  if (!provider) return { sent: false, reason: "EMAIL_PROVIDER_NOT_CONFIGURED" };
+  const sender = resolveEmailSender(env, provider);
+  if (provider === "smtp") {
+    const transport = nodemailer.createTransport({ host: env.emailSmtpHost, port: env.emailSmtpPort, secure: env.emailSmtpSecure, requireTLS: true, auth: { user: env.emailSmtpUser, pass: env.emailSmtpPassword }, connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 10_000 });
+    try {
+      const delivery = await transport.sendMail({ from: sender, to: recipients.join(", "), subject, text: payload.text, html: payload.html });
+      const accepted = (delivery.accepted || []).map((value: any) => String(typeof value === "string" ? value : value.address || "").toLowerCase());
+      if (!recipients.every((recipient) => accepted.includes(recipient.toLowerCase()))) {
+        throw Object.assign(new Error("SMTP did not accept every recipient"), { code: "SMTP_RECIPIENT_REJECTED" });
+      }
+      return { sent: true, provider: "smtp" };
+    } catch (error: any) {
+      const knownCodes = ["EAUTH", "ETIMEDOUT", "ESOCKET", "ECONNECTION", "EDNS", "EENVELOPE", "EMESSAGE", "SMTP_RECIPIENT_REJECTED"];
+      const code = knownCodes.includes(error?.code) ? error.code : "SMTP_SEND_FAILED";
+      throw Object.assign(new Error("SMTP email delivery failed"), { code });
+    } finally { transport.close(); }
   }
-  if (!env.emailApiKey && env.emailSmtpHost && env.emailSmtpUser && env.emailSmtpPassword) {
-    const transport = nodemailer.createTransport({ host: env.emailSmtpHost, port: env.emailSmtpPort, secure: env.emailSmtpSecure, auth: { user: env.emailSmtpUser, pass: env.emailSmtpPassword }, connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 10_000 });
-    const sender = env.emailFrom === "Drone Bangladesh <onboarding@resend.dev>" ? env.emailSmtpUser : env.emailFrom;
-    await transport.sendMail({ from: sender, to: recipients.join(", "), subject, text: payload.text, html: payload.html });
-    return { sent: true, provider: "smtp" };
+  let result: Response;
+  try {
+    result = await fetch(env.emailApiUrl, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + env.emailApiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: sender, to: recipients, subject, text: payload.text, html: payload.html }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    throw Object.assign(new Error("Email API could not be reached"), { code: "EMAIL_API_UNAVAILABLE" });
   }
-  const result = await fetch(env.emailApiUrl, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env.emailApiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: env.emailFrom, to: recipients, subject, text: payload.text, html: payload.html }),
-    signal: AbortSignal.timeout(10_000),
-  });
   if (!result.ok) {
-    const detail = await result.text().catch(() => "");
-    throw new Error(`Email provider rejected the message (${result.status}): ${detail.slice(0, 240)}`);
+    // Provider response bodies can contain credentials and customer addresses.
+    // Keep a useful status code without copying those details into server logs.
+    throw Object.assign(new Error("Email API rejected the message"), { code: "EMAIL_API_REJECTED", statusCode: result.status });
   }
-  return { sent: true };
+  return { sent: true, provider: "api" };
 }
 
 export async function notifyAdminOrderConfirmation(order: any) {
@@ -64,7 +79,7 @@ export async function notifyAdminOrderConfirmation(order: any) {
   const itemRows = items.map((item: any) => `<tr><td style="padding:8px;border:1px solid #d9e0e8">${esc(item.name || item.slug || "Product")}</td><td style="padding:8px;border:1px solid #d9e0e8;text-align:center">${esc(item.quantity || 0)}</td><td style="padding:8px;border:1px solid #d9e0e8;text-align:right">${money(item.price)}</td><td style="padding:8px;border:1px solid #d9e0e8;text-align:right">${money(Number(item.price || 0) * Number(item.quantity || 0))}</td></tr>`).join("");
   const subject = `New order confirmed: ${order.orderNumber}`;
   const text = [
-    "New Drone Bangladesh order",
+    "New Sarker Fabrics order",
     `Order: ${order.orderNumber}`,
     `Customer: ${customer.name || "N/A"}`,
     `Phone: ${customer.phone || "N/A"}`,
@@ -83,8 +98,24 @@ export async function notifyAdminOrderConfirmation(order: any) {
     `Total: BDT ${Number(order.total || 0).toLocaleString("en-BD")}`,
     `Notes: ${order.notes || "N/A"}`,
   ].join("\n");
-  const html = `<div style="font-family:Arial,sans-serif;max-width:720px;margin:auto;color:#0b1f38"><h2 style="margin-bottom:6px">New order confirmed</h2><p style="margin-top:0;color:#64748b">Order <strong>${esc(order.orderNumber)}</strong> has been saved in the live order database.</p><table style="width:100%;border-collapse:collapse;margin:18px 0"><tr><td><strong>Customer</strong><br>${esc(customer.name || "N/A")}<br>${esc(customer.phone || "N/A")}<br>${esc(customer.email || "N/A")}</td><td><strong>Delivery address</strong><br>${esc(shippingAddress)}</td></tr></table><table style="width:100%;border-collapse:collapse"><thead><tr><th style="padding:8px;border:1px solid #d9e0e8;text-align:left">Product</th><th style="padding:8px;border:1px solid #d9e0e8">Qty</th><th style="padding:8px;border:1px solid #d9e0e8;text-align:right">Unit</th><th style="padding:8px;border:1px solid #d9e0e8;text-align:right">Total</th></tr></thead><tbody>${itemRows}</tbody></table><div style="margin:18px 0;text-align:right"><div>Subtotal: <strong>${money(order.subtotal)}</strong></div><div>Discount: <strong>${money(order.discount)}</strong></div><div>Delivery: <strong>${money(order.deliveryCharge)}</strong></div><div style="font-size:18px;margin-top:6px">Grand total: <strong>${money(order.total)}</strong></div></div><p><strong>Payment:</strong> ${esc(label(order.paymentMethod))} · ${esc(label(order.paymentStatus))}<br><strong>Order status:</strong> ${esc(label(order.deliveryStatus))}<br><strong>Notes:</strong> ${esc(order.notes || "N/A")}</p></div>`;
+  const html = `<div style="font-family:Arial,sans-serif;max-width:720px;margin:auto;color:#0b1f38"><h2 style="margin-bottom:6px">Sarker Fabrics — New order confirmed</h2><p style="margin-top:0;color:#64748b">Order <strong>${esc(order.orderNumber)}</strong> has been received.</p><table style="width:100%;border-collapse:collapse;margin:18px 0"><tr><td><strong>Customer</strong><br>${esc(customer.name || "N/A")}<br>${esc(customer.phone || "N/A")}<br>${esc(customer.email || "N/A")}</td><td><strong>Delivery address</strong><br>${esc(shippingAddress)}</td></tr></table><table style="width:100%;border-collapse:collapse"><thead><tr><th style="padding:8px;border:1px solid #d9e0e8;text-align:left">Product</th><th style="padding:8px;border:1px solid #d9e0e8">Qty</th><th style="padding:8px;border:1px solid #d9e0e8;text-align:right">Unit</th><th style="padding:8px;border:1px solid #d9e0e8;text-align:right">Total</th></tr></thead><tbody>${itemRows}</tbody></table><div style="margin:18px 0;text-align:right"><div>Subtotal: <strong>${money(order.subtotal)}</strong></div><div>Discount: <strong>${money(order.discount)}</strong></div><div>Delivery: <strong>${money(order.deliveryCharge)}</strong></div><div style="font-size:18px;margin-top:6px">Grand total: <strong>${money(order.total)}</strong></div></div><p><strong>Payment:</strong> ${esc(label(order.paymentMethod))} · ${esc(label(order.paymentStatus))}<br><strong>Order status:</strong> ${esc(label(order.deliveryStatus))}<br><strong>Notes:</strong> ${esc(order.notes || "N/A")}</p></div>`;
   return sendNotificationEmail({ to: env.notificationEmail, subject, text, html });
+}
+
+/** Dispatch once after checkout succeeds; mail failures never undo an order. */
+export async function sendAdminOrderNotification(order: any) {
+  try {
+    const result = await notifyAdminOrderConfirmation(order);
+    if (result.sent) console.info("[email] Admin order notification accepted by", result.provider);
+    else console.warn("[email] Admin order notification not sent:", result.reason);
+    return result;
+  } catch (error: any) {
+    const codes = ["EAUTH", "ETIMEDOUT", "ESOCKET", "ECONNECTION", "EDNS", "EENVELOPE", "EMESSAGE", "SMTP_RECIPIENT_REJECTED", "SMTP_SEND_FAILED", "EMAIL_API_UNAVAILABLE", "EMAIL_API_REJECTED"];
+    const code = codes.includes(error?.code) ? error.code : "EMAIL_SEND_FAILED";
+    const status = Number.isInteger(error?.statusCode) && error.statusCode >= 400 && error.statusCode <= 599 ? error.statusCode : undefined;
+    console.error("[email] Admin order notification failed:", code, ...(status ? [status] : []));
+    return { sent: false, reason: code };
+  }
 }
 
 export async function notifyAdminStockOut(product: { name: string; slug: string; sku?: string; stock: number }, reference?: string) {

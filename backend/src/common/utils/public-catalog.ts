@@ -5,7 +5,7 @@
  * with those fields.
  */
 export const publicProductFields = [
-  "name", "slug", "brand", "category", "subcategory", "sku", "images",
+  "name", "slug", "brand", "category", "subcategory", "sku", "color", "images",
   "galleryVideos", "youtubeUrl", "shortDescription", "description",
   "descriptionHtml", "descriptionCss", "sizeMeasurementHtml", "accessoriesHtml", "accessoriesCss",
   "keyFeatures", "specifications", "specificationTabs", "price", "oldPrice",
@@ -14,6 +14,13 @@ export const publicProductFields = [
   "isPopular", "isDjiDrone", "isProfessionalDrone", "isEnterpriseAgriculture", "isEnterprise",
   "menuPlacements", "homePlacements", "faqs", "similarProducts", "comboProducts",
   "createdAt", "updatedAt",
+] as const;
+
+// The navigation reads every public catalogue page, so omit rich descriptions,
+// specifications and videos from that request while keeping catalogue links.
+export const publicProductMenuFields = [
+  "name", "slug", "brand", "category", "subcategory", "images", "badge",
+  "shortDescription", "status", "menuPlacements", "createdAt", "updatedAt",
 ] as const;
 
 export const publicAccessoryFields = [

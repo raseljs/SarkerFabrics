@@ -1,3 +1,5 @@
+import { trackFacebookCartAddition } from "@/lib/facebook-pixel";
+
 const apiBase = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
 
 export function getApiBase() { return apiBase; }
@@ -45,7 +47,11 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, allowR
   }
   if (!response.ok) throw new Error(await parseApiError(response));
   if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  const payload = await response.json() as T;
+  if (typeof window !== "undefined" && path === "/cart/items" && init.method?.toUpperCase() === "POST") {
+    trackFacebookCartAddition(init.body, payload);
+  }
+  return payload;
 }
 
 export async function apiFormRequest<T>(path: string, form: FormData): Promise<T> {

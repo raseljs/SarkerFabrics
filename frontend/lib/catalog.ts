@@ -98,6 +98,9 @@ export async function getProducts(query: ProductQuery = {}) { return (await quer
 
 export type HomepageProductRails = {
   newArrival: CatalogProduct[];
+  womenTShirt: CatalogProduct[];
+  menTShirt: CatalogProduct[];
+  hoodie: CatalogProduct[];
   hotProducts: CatalogProduct[];
   djiDrone: CatalogProduct[];
   professionalDrone: CatalogProduct[];
@@ -113,6 +116,9 @@ function fallbackHomepageRails(): HomepageProductRails {
   const professional = fallbackProducts.filter((product) => ["professional drone","camera drone","camera drones"].includes(String(product.category || "").toLowerCase()));
   return {
     newArrival: fallbackProducts.filter((product) => product.isNewArrival),
+    womenTShirt: fallbackProducts.filter(product => String(product.category || "").toLowerCase().replace(/[-_\s]+/g, " ") === "women t shirt"),
+    menTShirt: fallbackProducts.filter(product => String(product.category || "").toLowerCase().replace(/[-_\s]+/g, " ") === "men t shirt"),
+    hoodie: fallbackProducts.filter(product => String(product.category || "").toLowerCase() === "hoodie"),
     hotProducts: fallbackProducts.filter((product) => product.isPopular),
     djiDrone: dji,
     professionalDrone: professional,

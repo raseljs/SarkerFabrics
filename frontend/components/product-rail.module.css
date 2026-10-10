@@ -1,0 +1,5 @@
+@media (max-width: 720px) {
+  .twoMobileRows :global(.product-rail-track) {
+    grid-template-rows: repeat(2, auto);
+  }
+}

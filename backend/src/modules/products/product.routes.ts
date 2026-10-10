@@ -5,7 +5,7 @@ import { Accessory } from "../accessories/accessory.model.js";
 import { ComboMapping } from "../combo/combo-mapping.model.js";
 import { Order } from "../orders/order.model.js";
 import { env } from "../../config/env.js";
-import { presentPublicAccessory, presentPublicProduct, publicProductFields } from "../../common/utils/public-catalog.js";
+import { presentPublicAccessory, presentPublicProduct, publicProductFields, publicProductMenuFields } from "../../common/utils/public-catalog.js";
 
 export const productRouter = Router();
 
@@ -101,7 +101,11 @@ productRouter.get("/", async (request, response, next) => {
     const filter: Record<string, unknown> = { isActive: true, $and: clauses };
     for (const flag of ["isNewArrival", "isPopular"] as const) if (request.query[flag] === "true") filter[flag] = true;
     const sort: Record<string, 1 | -1> = request.query.sort === "price-asc" ? { price: 1 } : request.query.sort === "price-desc" ? { price: -1 } : request.query.sort === "name" ? { name: 1 } : { createdAt: -1 };
-    const productQuery = Product.find(filter).select(publicProductFields.join(" ")).sort(sort).skip((page - 1) * limit).limit(limit);
+    const menuView = request.query.view === "menu";
+    // Equal timestamps need a stable tie-break while the menu traverses pages.
+    if (menuView) sort._id = sort.createdAt === -1 ? -1 : 1;
+    const fields = menuView ? publicProductMenuFields : publicProductFields;
+    const productQuery = Product.find(filter).select(fields.join(" ")).sort(sort).skip((page - 1) * limit).limit(limit);
     const [products, total] = await Promise.all([
       productQuery.lean(),
       Product.countDocuments(filter),
@@ -156,6 +160,9 @@ productRouter.get("/homepage", async (_request, response, next) => {
     const data = {
       // These homepage rails are controlled directly by the Product display options checkboxes in Admin > Products.
       newArrival: products.filter((product: any) => product.isNewArrival === true).slice(0, 10).map((product) => presentProduct(product as Record<string, unknown>)),
+      womenTShirt: rail("women-t-shirt", product => exact(product.category, "Women T shirt")),
+      menTShirt: rail("men-t-shirt", product => exact(product.category, "Men T shirt")),
+      hoodie: rail("hoodie", product => exact(product.category, "Hoodie")),
       hotProducts: rail("hot-products", (product) => product.isPopular === true),
       djiDrone: products.filter((product: any) => product.isDjiDrone === true).slice(0, 10).map((product) => presentProduct(product as Record<string, unknown>)),
       professionalDrone: products.filter((product: any) => product.isProfessionalDrone === true).slice(0, 10).map((product) => presentProduct(product as Record<string, unknown>)),

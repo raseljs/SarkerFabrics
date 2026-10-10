@@ -38,6 +38,7 @@ const productSchema = new Schema({
   category: { type: String, required: true },
   subcategory: { type: String, trim: true, default: "" },
   sku: String,
+  color: { type: String, trim: true, maxlength: 100, default: "" },
   images: [String],
   galleryVideos: { type: [String], default: [] },
   youtubeUrl: String,

@@ -25,11 +25,11 @@ test('admin login cannot bypass a missing backend and customer auth does not att
   assert.match(api, /path\.startsWith\("\/admin"\)/);
 });
 
-test('checkout matches courier-only reference and sends normalized address fields', () => {
+test('checkout offers nationwide free delivery and sends normalized address fields', () => {
   const source = read('components/content-pages.tsx');
   assert.match(source, /Shipping Information/);
-  assert.match(source, /Courier Delivery/);
-  assert.match(source, /150৳/);
+  assert.match(source, /Free Delivery/);
+  assert.match(source, /All Bangladesh/);
   assert.match(source, /Have a Coupon/);
   assert.match(source, /shippingAddress:\s*\{\s*line1:/);
   assert.match(source, /Order Note \(Optional\)/);

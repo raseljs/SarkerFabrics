@@ -32,9 +32,10 @@
 .optionHeading span { font-weight:500; color:#475569; }
 .sizeGuide { display:inline-flex; align-items:center; gap:5px; padding:0; border:0; background:transparent; color:#17253b; font:inherit; font-weight:700; cursor:pointer; }
 .sizeGuide:hover { color:#e51e2a; }
-.colorList { display:flex; gap:9px; overflow-x:auto; padding:2px 2px 3px; scrollbar-width:thin; }
-.colorOption { position:relative; flex:0 0 58px; width:58px; height:65px; padding:3px; overflow:hidden; border:1px solid #d8dee8; border-radius:7px; background:#f8fafc; cursor:pointer; transition:border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
-.colorOption img { width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply; }
+.colorList { display:flex; flex-wrap:wrap; gap:9px; min-width:0; padding:2px 2px 3px; }
+.colorOption { position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; flex:0 0 58px; width:58px; height:65px; padding:3px; overflow:hidden; border:1px solid #d8dee8; border-radius:7px; background:#f8fafc; cursor:pointer; transition:border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+.colorOption img { flex:1; min-height:0; width:100%; height:calc(100% - 30px); object-fit:contain; mix-blend-mode:multiply; }
+.colorOptionName { display:-webkit-box; flex:none; width:100%; min-height:26px; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; color:#334155; font-size:11px; font-weight:600; line-height:13px; overflow-wrap:anywhere; text-align:center; }
 .colorOption:hover { border-color:#ef6b73; transform:translateY(-1px); }
 .colorOptionSelected { border:2px solid #ef4a22; box-shadow:0 0 0 2px #fff, 0 0 0 3px #ef4a2240; }
 .colorOptionSelected::after { content:"✓"; position:absolute; top:2px; right:2px; display:grid; place-items:center; width:16px; height:16px; border-radius:50%; background:#ff5a1f; color:#fff; font-size:10px; font-weight:800; }

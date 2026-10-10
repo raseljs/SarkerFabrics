@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import mongoose from "mongoose";
 import crypto from "node:crypto";
 import { Product } from "../products/product.model.js";
+import { productDisplayName } from "../products/product-display-name.js";
 import { PreOrder } from "./preorder.model.js";
 import { env } from "../../config/env.js";
 import { readBearerToken, readCookieToken, requireAuth, validateActiveUser, verifyAccessToken } from "../../common/middleware/auth.middleware.js";
@@ -98,14 +99,14 @@ preorderRouter.post("/", async (request, response, next) => {
     const user = (request as PreOrderRequest).user;
     const preOrderNumber = `PO-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(16).toString("hex").toUpperCase()}`;
     const preOrder = await PreOrder.create({
-      preOrderNumber, productId: product._id, productSlug: product.slug, productName: product.name,
+      preOrderNumber, productId: product._id, productSlug: product.slug, productName: productDisplayName(product),
       productImage: product.images?.[0], quantity, customer: { name, email, phone }, shippingAddress,
       unitPrice: product.price, subtotal, paymentPlan, depositPercent, amountDue, remainingAmount: subtotal - amountDue,
       paymentMethod,
       paymentStatus: "pending", status: "pending", notes: String(body.notes || "").trim().slice(0, 2_000) || undefined,
       userId: user?.id && mongoose.isValidObjectId(user.id) ? new mongoose.Types.ObjectId(user.id) : undefined,
     });
-    const snapshot = { preOrderNumber, productName: product.name, quantity, customer: { name, email, phone }, amountDue, paymentPlan };
+    const snapshot = { preOrderNumber, productName: productDisplayName(product), quantity, customer: { name, email, phone }, amountDue, paymentPlan };
     void notifyAdminPreOrder(preOrder.toObject()).catch((error) => console.error("Pre-order admin notification failed:", error));
     void notifyCustomerPreOrderConfirmation({ ...snapshot, customer: { name, email } }).catch((error) => console.error("Pre-order customer notification failed:", error));
     response.status(201).json({ success: true, data: presentPreOrder(preOrder.toObject()), message: "Pre-order received. Our team will contact you for payment and availability confirmation." });

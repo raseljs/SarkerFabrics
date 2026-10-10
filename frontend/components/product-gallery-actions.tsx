@@ -8,9 +8,29 @@ import { apiRequest, getApiBase } from "@/lib/api";
 const wishlistKey = "drone-bangladesh-wishlist";
 
 export default function ProductGalleryActions({ product }: { product: CatalogProduct }) {
+  const [activeProduct, setActiveProduct] = useState(product);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
+
+  useEffect(() => {
+    setActiveProduct(product);
+  }, [product]);
+
+  useEffect(() => {
+    function handleComboSelected(event: Event) {
+      const detail: unknown = (event as CustomEvent).detail;
+      if (!detail || typeof detail !== "object" || Array.isArray(detail)) return;
+      const selected = (detail as Record<string, unknown>).product;
+      if (!selected || typeof selected !== "object" || Array.isArray(selected)) return;
+      const candidate = selected as CatalogProduct;
+      if (typeof candidate.slug !== "string" || !candidate.slug.trim() || typeof candidate.name !== "string" || !candidate.name.trim()) return;
+      setActiveProduct(candidate);
+      setFeedback("");
+    }
+    window.addEventListener("combo-selected", handleComboSelected);
+    return () => window.removeEventListener("combo-selected", handleComboSelected);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -18,20 +38,20 @@ export default function ProductGalleryActions({ product }: { product: CatalogPro
       if (getApiBase()) {
         try {
           const response = await apiRequest<{ data?: CatalogProduct[] }>("/account/wishlist");
-          if (active) setSaved((response.data || []).some(item => item.slug === product.slug));
+          if (active) setSaved((response.data || []).some(item => item.slug === activeProduct.slug));
           return;
         } catch { /* guests use the local wishlist */ }
       }
       try {
         const items = JSON.parse(window.localStorage.getItem(wishlistKey) || "[]") as CatalogProduct[];
-        if (active) setSaved(items.some(item => item.slug === product.slug));
+        if (active) setSaved(items.some(item => item.slug === activeProduct.slug));
       } catch { /* storage unavailable */ }
     }
     void load();
     const refresh = () => void load();
     window.addEventListener("drone-wishlist-updated", refresh);
     return () => { active = false; window.removeEventListener("drone-wishlist-updated", refresh); };
-  }, [product.slug]);
+  }, [activeProduct.slug]);
 
   function showFeedback(message: string) {
     setFeedback(message);
@@ -39,13 +59,13 @@ export default function ProductGalleryActions({ product }: { product: CatalogPro
   }
 
   function productUrl() {
-    return new URL(`/products/${encodeURIComponent(product.slug)}`, window.location.origin).href;
+    return new URL(`/products/${encodeURIComponent(activeProduct.slug)}`, window.location.origin).href;
   }
 
   async function share() {
     const url = productUrl();
     if (navigator.share) {
-      try { await navigator.share({ title: product.name, url }); return; }
+      try { await navigator.share({ title: activeProduct.name, url }); return; }
       catch (error) { if (error instanceof DOMException && error.name === "AbortError") return; }
     }
     try { await navigator.clipboard.writeText(url); showFeedback("Link copied"); }
@@ -65,21 +85,21 @@ export default function ProductGalleryActions({ product }: { product: CatalogPro
     try {
       if (getApiBase()) {
         try {
-          await apiRequest(`/account/wishlist/${encodeURIComponent(product.slug)}`, { method: nextSaved ? "POST" : "DELETE" });
+          await apiRequest(`/account/wishlist/${encodeURIComponent(activeProduct.slug)}`, { method: nextSaved ? "POST" : "DELETE" });
           window.dispatchEvent(new Event("drone-wishlist-updated"));
           return;
         } catch { /* guests use the local wishlist */ }
       }
       const items = JSON.parse(window.localStorage.getItem(wishlistKey) || "[]") as CatalogProduct[];
-      const exists = items.some(item => item.slug === product.slug);
-      const next = nextSaved && !exists ? [product, ...items] : !nextSaved ? items.filter(item => item.slug !== product.slug) : items;
+      const exists = items.some(item => item.slug === activeProduct.slug);
+      const next = nextSaved && !exists ? [activeProduct, ...items] : !nextSaved ? items.filter(item => item.slug !== activeProduct.slug) : items;
       window.localStorage.setItem(wishlistKey, JSON.stringify(next));
       window.dispatchEvent(new Event("drone-wishlist-updated"));
     } catch { setSaved(!nextSaved); }
     finally { setBusy(false); }
   }
 
-  const image = product.image || product.images?.[0] || "";
+  const image = activeProduct.image || activeProduct.images?.[0] || "";
 
   const actionClass = "inline-flex size-8 items-center justify-center rounded-full border-0 bg-transparent text-slate-500 transition-colors hover:bg-slate-100 hover:text-red-600";
 

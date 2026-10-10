@@ -31,6 +31,6 @@ export function cartTotals(items: Array<{ price: number; quantity: number }>, di
     return sum + price * quantity;
   }, 0);
   const safeDiscount = Math.max(0, Math.min(subtotal, Number.isFinite(Number(discount)) ? Number(discount) : 0));
-  const deliveryCharge = subtotal > 0 ? 150 : 0;
+  const deliveryCharge = 0;
   return { subtotal, discount: safeDiscount, deliveryCharge, total: subtotal - safeDiscount + deliveryCharge };
 }

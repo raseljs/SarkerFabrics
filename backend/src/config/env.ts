@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { isValidEmail } from "../common/utils/security.js";
+import { resolveNotificationRecipient } from "../modules/notifications/email.configuration.js";
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(moduleDir, "..", "..", ".env") });
@@ -62,7 +63,7 @@ export const env = {
   jwtAccessSecret,
   jwtRefreshSecret,
   adminEmail: process.env.ADMIN_EMAIL || "admin@dronebangladesh.com",
-  notificationEmail: process.env.NOTIFICATION_EMAIL || "dronebangladesh567@gmail.com",
+  notificationEmail: resolveNotificationRecipient(process.env.NOTIFICATION_EMAIL, process.env.EMAIL_SMTP_USER, process.env.ADMIN_EMAIL || "admin@dronebangladesh.com"),
   adminPassword,
   adminSeedKey,
   enableDemoData: process.env.ENABLE_DEMO_DATA === "true",
@@ -71,9 +72,10 @@ export const env = {
     apiKey: process.env.CLOUDINARY_API_KEY || "",
     apiSecret: process.env.CLOUDINARY_API_SECRET || "",
   },
+  emailProvider: process.env.EMAIL_PROVIDER || "auto",
   emailApiUrl: process.env.EMAIL_API_URL || "https://api.resend.com/emails",
   emailApiKey: process.env.EMAIL_API_KEY || "",
-  emailFrom: process.env.EMAIL_FROM || "Drone Bangladesh <onboarding@resend.dev>",
+  emailFrom: process.env.EMAIL_FROM || "Sarker Fabrics <onboarding@resend.dev>",
   emailSmtpHost: process.env.EMAIL_SMTP_HOST || "",
   emailSmtpPort: Number(process.env.EMAIL_SMTP_PORT || 465),
   emailSmtpSecure: process.env.EMAIL_SMTP_SECURE !== "false",

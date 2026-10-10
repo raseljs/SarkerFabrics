@@ -1,0 +1,10 @@
+.group { margin:1px 0; }
+.button { width:100%; min-height:38px; display:flex; align-items:center; gap:10px; border:0; border-radius:8px; padding:0 12px; color:rgba(220,236,255,.78); background:transparent; font:inherit; font-weight:600; text-align:left; cursor:pointer; transition:background .16s; }
+.button svg { color:#8abde8; flex-shrink:0; }
+.button:hover { background:rgba(255,255,255,.07); }
+.active { background:linear-gradient(120deg,#1c7be6,#209aef); color:#fff; }
+.active svg { color:#fff; }
+.chevron { margin-left:auto; font-size:14px; }
+.submenu { border-left:1px solid #47759f; margin:5px 0 9px 20px; padding-left:7px; }
+.submenu a { font-size:12px !important; padding:0 10px !important; min-height:36px !important; }
+.button:focus-visible { outline:2px solid #c7e7ff; outline-offset:2px; }

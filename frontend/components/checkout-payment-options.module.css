@@ -1,0 +1,14 @@
+.options { margin: 0 0 18px; padding: 0; border: 0; min-width: 0; display: grid; gap: 10px; }
+.options legend { font-size: 16px; font-weight: 700; color: #0b2445; padding: 0; margin-bottom: 12px; }
+.choice { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid #dce5ef; border-radius: 7px; cursor: pointer; color: #0b2445; }
+.choice input { accent-color: #ed1427; width: 16px; height: 16px; margin: 0; flex-shrink: 0; }
+.choice svg { flex-shrink: 0; color: #5c738d; }
+.choice strong { display: block; font-size: 14px; }
+.choice small { display: block; font-size: 12px; color: #708097; margin-top: 4px; }
+.selected { border-color: #ed1427; background: #fff9fa; }
+.selected svg { color: #ed1427; }
+.email { display: grid; gap: 7px; font-size: 12px; font-weight: 600; color: #0b2445; }
+.email input { width: 100%; min-width: 0; border: 1px solid #dce5ef; border-radius: 5px; padding: 12px 13px; font: inherit; font-weight: 400; }
+.email small { color: #708097; font-weight: 400; }
+.options:disabled { opacity: .65; }
+@media (max-width: 560px) { .choice { gap: 10px; padding: 12px; } }

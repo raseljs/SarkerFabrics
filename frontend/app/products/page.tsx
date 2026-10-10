@@ -4,6 +4,9 @@ import { buildMetadata } from "@/lib/seo";
 import { queryProducts } from "@/lib/catalog";
 import { getContentEntries } from "@/lib/content";
 
+// All Products must reflect newly published inventory when the page opens.
+export const fetchCache = "force-no-store";
+
 export const metadata: Metadata = buildMetadata({
   title: "Women T shirt, Men T shirt & Hoodie",
   description: "Browse Women T shirts, Men T shirts and Hoodies from Sarker Fabrics with current prices and availability.",
@@ -44,7 +47,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     <ProductListing
       searchParams={sp}
       title="All Products"
-      description="Browse the latest drones, handhelds, accessories and enterprise equipment."
+      description="Browse all Women T shirts, Men T shirts, Hoodies and other clothing from Sarker Fabrics."
       result={result}
       bannerImage={bannerImage}
     />

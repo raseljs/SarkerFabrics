@@ -16,6 +16,19 @@ const statusEventSchema = new Schema({
   at: { type: Date, default: Date.now },
 }, { _id: false });
 
+const courierShipmentSchema = new Schema({
+  provider: { type: String, enum: ["steadfast", "pathao", "redx"], required: true },
+  state: { type: String, enum: ["pending", "booked", "failed", "uncertain"], required: true },
+  consignmentId: String,
+  trackingCode: String,
+  trackingUrl: String,
+  providerStatus: String,
+  errorMessage: String,
+  attemptedAt: Date,
+  updatedAt: Date,
+  requestId: String,
+}, { _id: false });
+
 const orderSchema = new Schema({
   orderNumber: { type: String, required: true, unique: true, index: true },
   userId: { type: Schema.Types.ObjectId, ref: "User", index: true },
@@ -25,15 +38,22 @@ const orderSchema = new Schema({
   deliveryMethod: { type: String, enum: ["courier"], default: "courier" },
   courierPartner: { type: String, default: "Courier Delivery" },
   trackingId: String,
+  courierShipment: { type: courierShipmentSchema, default: undefined },
   estimatedDelivery: String,
   paymentMethod: { type: String, enum: ["cash_on_delivery", "online", "emi"], default: "cash_on_delivery" },
+  paymentGateway: { type: String, enum: ["bkash", "shurjopay", "uddoktapay", "aamarpay", "sslcommerz"] },
+  paymentTransactionId: String,
+  paymentCallbackTokenHash: { type: String, select: false, index: true },
+  paymentConfigSnapshot: { type: String, select: false },
+  paymentSessionReference: { type: String, select: false },
+  paymentVerificationStartedAt: { type: Date, select: false },
   paymentStatus: { type: String, enum: ["pending", "paid", "failed", "refunded"], default: "pending" },
   deliveryStatus: { type: String, enum: ["confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered", "cancelled"], default: "confirmed", index: true },
   statusHistory: { type: [statusEventSchema], default: [] },
   subtotal: { type: Number, required: true, min: 0 },
   discount: { type: Number, default: 0, min: 0 },
   couponCode: String,
-  deliveryCharge: { type: Number, default: 150, min: 0 },
+  deliveryCharge: { type: Number, default: 0, min: 0 },
   total: { type: Number, required: true, min: 0 },
   notes: String,
   pointsAwarded: { type: Number, default: 0, min: 0 },

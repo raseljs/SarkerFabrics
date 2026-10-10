@@ -5,11 +5,13 @@ import { utilities, resolveClasses } from "@/lib/tailwind";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AdminDialogProvider } from "./admin-dialog";
+import courierNavStyles from "./admin-courier-nav.module.css";
 
 import {
   BarChart3,
   Bell,
   CircleDollarSign,
+  CodeXml,
   ClipboardList,
   Building2,
   FileText,
@@ -30,6 +32,7 @@ import {
   Tags,
   Users,
   Warehouse,
+  Truck,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -99,6 +102,8 @@ const menuItems: MenuItem[] = [
   { label: "Pre-Orders", href: "/admin/preorders", icon: ClipboardList },
   { label: "Media Library", href: "/admin/media", icon: ImagePlus },
   { label: "Reports", href: "/admin/reports", icon: BarChart3 },
+  { label: "Facebook Pixel Setup", href: "/admin/pixels", icon: CodeXml },
+  { label: "Payment Gateways", href: "/admin/payments", icon: CircleDollarSign },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
@@ -106,6 +111,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const searchParams = useSearchParams();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(pathname.startsWith("/admin/orders") || pathname.startsWith("/admin/couriers"));
+  useEffect(() => { if (pathname.startsWith("/admin/orders") || pathname.startsWith("/admin/couriers")) setOrdersOpen(true); }, [pathname]);
   const [authChecking, setAuthChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
@@ -157,7 +164,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           const active = resource
             ? pathname === baseHref && searchParams.get("resource") === resource
             : label === "Dashboard" ? pathname === baseHref : baseHref !== "/admin" && (pathname === baseHref || pathname.startsWith(`${baseHref}/`));
-          return <Link href={href} className={tw(active ? "active" : "")} onClick={() => setSidebarOpen(false)} key={label}><Icon size={17} /><span>{label}</span>{label === "Products" && <span className={utilities("admin-nav-chevron", [1371, "[:where(&).admin-nav-chevron]:[margin-left:auto] [:where(&).admin-nav-chevron]:[color:#8aadcf] [:where(&).admin-nav-chevron]:[font-size:14px]"])}>⌄</span>}</Link>;
+          if (label === "Orders") return <div className={courierNavStyles.group} key={label}>
+            <button type="button" className={`${courierNavStyles.button} ${active || pathname.startsWith("/admin/couriers") ? courierNavStyles.active : ""}`} aria-expanded={ordersOpen} aria-controls="admin-orders-submenu" onClick={() => setOrdersOpen(open => !open)}><Icon size={17} /><span>Orders</span><span className={courierNavStyles.chevron}>{ordersOpen ? "⌃" : "⌄"}</span></button>
+            {ordersOpen && <div id="admin-orders-submenu" className={courierNavStyles.submenu}><Link href="/admin/orders" className={active ? tw("active") : ""} onClick={() => setSidebarOpen(false)}><ClipboardList size={15} />All Orders</Link><Link href="/admin/couriers" className={pathname.startsWith("/admin/couriers") ? tw("active") : ""} onClick={() => setSidebarOpen(false)}><Truck size={15} />Courier Integration</Link></div>}
+          </div>;
+          return <Link href={href} className={tw(active ? "active" : "")} onClick={() => setSidebarOpen(false)} key={label}><Icon size={17} /><span>{label}</span></Link>;
         })}
       </nav>
       <div className={utilities("admin-sidebar-bottom", [1372, "[:where(&).admin-sidebar-bottom]:[padding:14px_18px_20px] [:where(&).admin-sidebar-bottom]:[border-top:1px_solid_rgba(255,_255,_255,_.08)] [:where(&).admin-sidebar-bottom]:[background:rgba(0,_0,_0,_.1)]"], [1375, "[:where(&).admin-sidebar-bottom_p]:[margin:14px_0_0] [:where(&).admin-sidebar-bottom_p]:[color:#8aaac8] [:where(&).admin-sidebar-bottom_p]:[font-size:9px] [:where(&).admin-sidebar-bottom_p]:[line-height:1.7]"], [3371, "[:where(&).admin-nav-label,_:where(&).admin-sidebar-bottom_p,_:where(&).admin-visit-link]:[font-size:11px]"])}>

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import crypto from "node:crypto";
 import { Cart, cartTotals, type CartOwner } from "./cart.model.js";
 import { Product } from "../products/product.model.js";
+import { productDisplayName } from "../products/product-display-name.js";
 import { Coupon, calculateDiscount } from "../coupons/coupon.model.js";
 import { readCookieToken, readBearerToken, validateActiveUser, verifyAccessToken } from "../../common/middleware/auth.middleware.js";
 import { env } from "../../config/env.js";
@@ -71,7 +72,16 @@ function withTotals(cart: any) {
 }
 
 cartRouter.get("/", async (request, response, next) => {
-  try { response.json({ success: true, data: withTotals(await Cart.findOne(owner(request)).lean()) }); } catch (error) { next(error); }
+  try {
+    const cart = await Cart.findOne(owner(request)).lean();
+    if (cart?.items.length) {
+      const slugs = cart.items.slice(0, 100).map((item) => item.slug).filter((slug) => !slug.startsWith("custom-") && !slug.includes("-acc-"));
+      const products = await Product.find({ slug: { $in: slugs } }).select("slug name color").lean();
+      const names = new Map(products.map((product) => [product.slug, productDisplayName(product)]));
+      for (const item of cart.items) if (names.has(item.slug)) item.name = names.get(item.slug)!;
+    }
+    response.json({ success: true, data: withTotals(cart) });
+  } catch (error) { next(error); }
 });
 
 cartRouter.post("/items", async (request, response, next) => {
@@ -109,8 +119,8 @@ cartRouter.post("/items", async (request, response, next) => {
     if (requestedTotal > 99 || product.stock < requestedTotal) return response.status(409).json({ success: false, message: `Only ${product.stock} item(s) are currently available` });
     if (!existing && cart.items.length >= 100) return response.status(409).json({ success: false, message: "Your cart cannot contain more than 100 distinct products" });
     
-    if (existing) existing.quantity = requestedTotal;
-    else cart.items.push({ productId: product._id, slug: product.slug, name: product.name, image: product.images?.[0], price: product.price, quantity: qty });
+    if (existing) { existing.quantity = requestedTotal; existing.name = productDisplayName(product); }
+    else cart.items.push({ productId: product._id, slug: product.slug, name: productDisplayName(product), image: product.images?.[0], price: product.price, quantity: qty });
     cart.discount = 0; cart.couponCode = undefined;
     await cart.save();
     response.status(201).json({ success: true, data: withTotals(cart) });
@@ -130,8 +140,9 @@ cartRouter.patch("/items/:slug", async (request, response, next) => {
        return response.json({ success: true, data: withTotals(cart) });
     }
     
-    const product = await Product.findOne({ slug: request.params.slug, isActive: true, $or: [{ status: "published" }, { status: { $exists: false } }] }).select("stock").lean();
+    const product = await Product.findOne({ slug: request.params.slug, isActive: true, $or: [{ status: "published" }, { status: { $exists: false } }] }).select("stock name color").lean();
     if (!product || product.stock < qty) return response.status(409).json({ success: false, message: "Requested quantity is not available" });
+    item.name = productDisplayName(product);
     item.quantity = qty; cart.discount = 0; cart.couponCode = undefined; await cart.save();
     response.json({ success: true, data: withTotals(cart) });
   } catch (error) { next(error); }

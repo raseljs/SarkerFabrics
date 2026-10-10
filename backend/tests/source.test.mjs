@@ -20,8 +20,9 @@ test('orders reserve inventory and guest tracking requires phone', () => {
   assert.match(source, /deliveryMethod:\s*"courier"/);
 });
 
-test('courier delivery is consistently 150 taka and coupons are real records', () => {
-  assert.match(read('src/modules/cart/cart.model.ts'), /deliveryCharge = subtotal > 0 \? 150 : 0/);
+test('courier delivery is free nationwide and coupons are real records', () => {
+  assert.match(read('src/modules/cart/cart.model.ts'), /deliveryCharge = 0/);
+  assert.match(read('src/modules/orders/order.model.ts'), /deliveryCharge: \{ type: Number, default: 0/);
   assert.match(read('src/modules/cart/cart.routes.ts'), /calculateDiscount/);
   assert.match(read('src/modules/coupons/coupon.model.ts'), /usageLimit/);
 });

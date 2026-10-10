@@ -4,14 +4,17 @@ import crypto from "node:crypto";
 import { Order } from "./order.model.js";
 import { Cart, cartTotals } from "../cart/cart.model.js";
 import { Product } from "../products/product.model.js";
+import { productDisplayName } from "../products/product-display-name.js";
 import { Coupon, calculateDiscount } from "../coupons/coupon.model.js";
 import { User } from "../users/user.model.js";
 import { requireAuth, readCookieToken, readBearerToken, validateActiveUser, verifyAccessToken } from "../../common/middleware/auth.middleware.js";
 import { reserveInventory, releaseInventory } from "./inventory.service.js";
 import { releaseOrderReservation } from "./reservation.service.js";
 import { env } from "../../config/env.js";
-import { notifyAdminOrderConfirmation, notifyCustomerOrderInvoice } from "../notifications/email.service.js";
-import { isValidEmail } from "../../common/utils/security.js";
+import { sendAdminOrderNotification, notifyCustomerOrderInvoice } from "../notifications/email.service.js";
+import { resolveCheckoutEmail } from "./order-customer.js";
+
+import { resolveOrderPaymentSelection, preparePaymentAttempt, startOrderPayment, presentCheckoutOrder, handlePaymentReturn } from "../payments/payment.order.service.js";
 
 export const orderRouter = Router();
 type OrderRequest = Request & { user?: ReturnType<typeof verifyAccessToken>; cookies?: Record<string, string> };
@@ -61,7 +64,7 @@ async function priceOrderItems(items: Array<any>) {
     
     const product = bySlug.get(item.slug)!;
     if (product.stock < quantity) throw Object.assign(new Error(`Requested quantity is not available for ${product.name}`), { statusCode: 409 });
-    return { productId: product._id, slug: product.slug, name: product.name, image: product.images?.[0], price: product.price, quantity };
+    return { productId: product._id, slug: product.slug, name: productDisplayName(product), image: product.images?.[0], price: product.price, quantity };
   });
 }
 function normalizeShippingAddress(value: Record<string, string> | undefined) {
@@ -101,7 +104,7 @@ orderRouter.post("/", async (request, response, next) => {
   let consumedCouponCode: string | undefined;
   let createdOrderId: unknown;
   try {
-    const body = request.body as { items?: Array<{ slug: string; quantity: number }>; customer?: { firstName?: string; lastName?: string; name?: string; email?: string; phone?: string }; shippingAddress?: Record<string, string>; paymentMethod?: "cash_on_delivery" | "online" | "emi"; notes?: string };
+    const body = request.body as { items?: Array<{ slug: string; quantity: number }>; customer?: { firstName?: string; lastName?: string; name?: string; email?: string; phone?: string }; shippingAddress?: Record<string, string>; paymentMethod?: "cash_on_delivery" | "online"; paymentGateway?: string; notes?: string };
     const user = authUser(request);
     const owner = user?.id && mongoose.isValidObjectId(user.id) ? { userId: new mongoose.Types.ObjectId(user.id) } : { sessionId: guestSession(request, response) };
     const cart = await Cart.findOne(owner);
@@ -109,11 +112,12 @@ orderRouter.post("/", async (request, response, next) => {
     if (!sourceItems.length) return response.status(400).json({ success: false, message: "Your cart is empty" });
     const customerName = String(body.customer?.name || `${body.customer?.firstName || ""} ${body.customer?.lastName || ""}`).trim().slice(0, 120);
     const phone = normalizePhone(body.customer?.phone).slice(0, 40);
-    const customerEmail = String(body.customer?.email || "").trim().toLowerCase().slice(0, 180);
-    const paymentMethod = ["cash_on_delivery", "online", "emi"].includes(String(body.paymentMethod)) ? body.paymentMethod : "cash_on_delivery";
+    const customerEmail = resolveCheckoutEmail(body.customer?.email, user?.email);
+    const payment = await resolveOrderPaymentSelection({ ...body, customer: { email: customerEmail } });
+    const paymentMethod = payment.method;
+    const attempt = payment.config ? preparePaymentAttempt(payment.config) : undefined;
     if (!customerName || !phone) return response.status(400).json({ success: false, message: "Customer name and phone are required" });
     if (!/^01\d{9}$/.test(phone)) return response.status(400).json({ success: false, message: "A valid Bangladesh mobile number is required" });
-    if (customerEmail && !isValidEmail(customerEmail)) return response.status(400).json({ success: false, message: "A valid email address is required" });
     const shippingAddress = normalizeShippingAddress(body.shippingAddress);
     if (!shippingAddress.line1 || !shippingAddress.city) return response.status(400).json({ success: false, message: "Delivery address and district/city are required" });
 
@@ -134,6 +138,7 @@ orderRouter.post("/", async (request, response, next) => {
       customer: { name: customerName, email: customerEmail || undefined, phone },
       items, shippingAddress,
       paymentMethod,
+      ...(attempt?.fields || {}),
       paymentStatus: "pending",
       deliveryMethod: "courier",
       courierPartner: "Courier Delivery",
@@ -144,26 +149,10 @@ orderRouter.post("/", async (request, response, next) => {
       ...totals,
     });
     createdOrderId = order._id;
-    void notifyAdminOrderConfirmation(order.toObject()).catch((error) => console.error("Order admin notification failed:", error));
+    const paymentUrl = payment.config && attempt ? await startOrderPayment(order, payment.config, attempt.token) : undefined;
     if (cart) await Cart.updateOne({ _id: cart._id }, { $set: { items: [], discount: 0 }, $unset: { couponCode: 1 } });
-    if (paymentMethod === "online") {
-      if (!env.ssl.storeId || !env.ssl.storePassword) {
-        await releaseOrderReservation(order._id, "Payment gateway is not configured");
-        return response.status(503).json({ success: false, message: "Online payment is temporarily unavailable" });
-      }
-      const base = env.ssl.sandbox ? "https://sandbox.sslcommerz.com" : "https://securepay.sslcommerz.com";
-      const params = new URLSearchParams({ store_id: env.ssl.storeId, store_passwd: env.ssl.storePassword, total_amount: String(order.total), currency: "BDT", tran_id: order.orderNumber, success_url: `${env.apiPublicUrl}/api/v1/orders/payment/success`, fail_url: `${env.apiPublicUrl}/api/v1/orders/payment/fail`, cancel_url: `${env.apiPublicUrl}/api/v1/orders/payment/cancel`, cus_name: customerName, cus_email: body.customer?.email || "", cus_phone: phone, shipping_method: "Courier", product_name: "Drone Bangladesh Order", product_category: "Electronics", product_profile: "general" });
-      const gatewayResponse = await fetch(`${base}/gwprocess/v4/api.php`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: params, signal: AbortSignal.timeout(10_000) });
-      if (!gatewayResponse.ok) {
-        await releaseOrderReservation(order._id, "Payment gateway initialization failed");
-        return response.status(502).json({ success: false, message: "Unable to initialize SSLCommerz payment" });
-      }
-      const gateway = await gatewayResponse.json() as any;
-      if (gateway.GatewayPageURL) return response.status(201).json({ success: true, data: order, paymentUrl: gateway.GatewayPageURL });
-      await releaseOrderReservation(order._id, "Payment gateway did not return a checkout URL");
-      return response.status(502).json({ success: false, message: "Unable to initialize SSLCommerz payment", data: order });
-    }
-    response.status(201).json({ success: true, data: order });
+    void sendAdminOrderNotification(presentCheckoutOrder(order));
+    response.status(201).json({ success: true, data: presentCheckoutOrder(order), ...(paymentUrl ? { paymentUrl } : {}) });
   } catch (error) {
     if (createdOrderId) await releaseOrderReservation(createdOrderId, "Checkout initialization failed");
     else {
@@ -178,7 +167,7 @@ async function paymentCallback(request: Request, response: import("express").Res
   const tranId = String(request.body?.tran_id || request.query?.tran_id || "").trim().toUpperCase().slice(0, 100);
   if (!orderNumberPattern.test(tranId)) return response.redirect(`${env.frontendUrl}/checkout?payment=failed`);
   const order = await Order.findOne({ orderNumber: tranId }).select("+reservationExpiresAt +inventoryReleasedAt +couponReleasedAt");
-  if (!order) return response.redirect(`${env.frontendUrl}/checkout?payment=${status === "paid" ? "success" : "failed"}`);
+  if (!order || order.paymentMethod !== "online" || order.paymentGateway) return response.redirect(`${env.frontendUrl}/checkout?payment=failed`);
   // A browser-visible failure/cancel callback is not proof of a gateway
   // event. Leave pending orders untouched until an authenticated validation
   // result or an admin reconciliation changes them, and never downgrade a
@@ -220,6 +209,25 @@ async function paymentCallback(request: Request, response: import("express").Res
 orderRouter.post("/payment/success", (req,res,next) => paymentCallback(req,res,"paid").catch(next));
 orderRouter.all("/payment/fail", (req,res,next) => paymentCallback(req,res,"failed").catch(next));
 orderRouter.all("/payment/cancel", (req,res,next) => paymentCallback(req,res,"failed").catch(next));
+
+// Both browser returns and provider notifications are verified against the gateway.
+orderRouter.route("/payment/:provider/:token")
+  .get(paymentReturn).post(paymentReturn);
+async function paymentReturn(request: Request, response: import("express").Response, next: import("express").NextFunction) {
+  try {
+    const payload = { ...request.query, ...(request.body && typeof request.body === "object" ? request.body : {}) };
+    const result = await handlePaymentReturn(request.params.provider, request.params.token, payload);
+    const target = new URL("/checkout", env.frontendUrl.split(",")[0].trim());
+    target.searchParams.set("payment", result.status);
+    if (result.orderNumber) target.searchParams.set("order", result.orderNumber);
+    response.set("Cache-Control", "no-store");
+    if (request.query.notification === "1") {
+      response.status(result.status === "failed" ? 400 : 200).json({ success: result.status === "success", status: result.status });
+      return;
+    }
+    response.redirect(303, target.href);
+  } catch (error) { next(error); }
+}
 
 orderRouter.get("/mine", requireAuth, async (request, response, next) => {
   try {

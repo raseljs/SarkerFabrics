@@ -89,13 +89,13 @@ export function invoiceHtml(order: InvoiceOrder) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Invoice ${esc(order.orderNumber)} - Drone Bangladesh</title>
+<title>Invoice ${esc(order.orderNumber)} - Sarker fabrics</title>
 
 <style>${invoiceTailwindCss}</style></head>
 <body class="invoice-export">
 <main class="sheet">
   <section class="head">
-    <div class="brand"><h1>DRONE BANGLADESH</h1><p>Drones, cameras, accessories &amp; expert support</p></div>
+    <div class="brand"><h1>Sarker fabrics</h1><p>Women T shirts, Men T shirts &amp; Hoodies</p></div>
     <div class="invoice"><h2>INVOICE</h2><strong>${esc(order.orderNumber)}</strong><small>${esc(created)}</small></div>
   </section>
   <section class="meta">
@@ -106,7 +106,7 @@ export function invoiceHtml(order: InvoiceOrder) {
   <section class="summary">
     <p><span>Subtotal</span><b>${money(order.subtotal)}</b></p>
     ${order.discount ? `<p><span>Discount${order.couponCode ? ` (${esc(order.couponCode)})` : ""}</span><b>-${money(order.discount)}</b></p>` : ""}
-    <p><span>Courier Delivery</span><b>${money(order.deliveryCharge ?? 150)}</b></p>
+    <p><span>Courier Delivery</span><b>${money(order.deliveryCharge ?? 0)}</b></p>
     <p class="grand"><span>Total</span><b>${money(order.total)}</b></p>
   </section>
   <div class="foot"><span>✓ Genuine products</span><span>✓ Warranty support</span><span>✓ Courier delivery</span></div>
@@ -145,7 +145,7 @@ export async function downloadInvoiceHtml(order: InvoiceOrder) {
     
     <div class="invoice-pdf"><div class="pdf-invoice-wrapper">
       <section class="pdf-head">
-        <div class="pdf-brand"><h1>DRONE BANGLADESH</h1><p>Drones, cameras, accessories &amp; expert support</p></div>
+        <div class="pdf-brand"><h1>Sarker fabrics</h1><p>Women T shirts, Men T shirts &amp; Hoodies</p></div>
         <div class="pdf-invoice"><h2>INVOICE</h2><strong>${esc(order.orderNumber)}</strong><small>${esc(created)}</small></div>
       </section>
       <section class="pdf-meta">
@@ -156,7 +156,7 @@ export async function downloadInvoiceHtml(order: InvoiceOrder) {
       <section class="pdf-summary">
         <p><span>Subtotal</span><b>${money(order.subtotal)}</b></p>
         ${order.discount ? `<p><span>Discount${order.couponCode ? ` (${esc(order.couponCode)})` : ""}</span><b>-${money(order.discount)}</b></p>` : ""}
-        <p><span>Courier Delivery</span><b>${money(order.deliveryCharge ?? 150)}</b></p>
+        <p><span>Courier Delivery</span><b>${money(order.deliveryCharge ?? 0)}</b></p>
         <p class="pdf-grand"><span>Total</span><b>${money(order.total)}</b></p>
       </section>
       <div class="pdf-foot"><span>✓ Genuine products</span><span>✓ Warranty support</span><span>✓ Courier delivery</span></div>
@@ -166,7 +166,7 @@ export async function downloadInvoiceHtml(order: InvoiceOrder) {
 
   const opt = {
     margin:       [0.1, 0.1] as [number, number],
-    filename:     `Drone-Bangladesh-Invoice-${order.orderNumber}.pdf`,
+    filename:     `Sarker-Fabrics-Invoice-${order.orderNumber}.pdf`,
     image:        { type: 'jpeg' as const, quality: 0.98 },
     html2canvas:  { scale: 2 },
     jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' as const }
